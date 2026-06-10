@@ -379,17 +379,22 @@ function buildSky(){
     const ch=new THREE.Mesh(new THREE.IcosahedronGeometry(r,0), new THREE.MeshBasicMaterial({color:0x6a7388, fog:false}));
     ch.position.set(moon.position.x+ox, moon.position.y+oy, moon.position.z+10); scene.add(ch);
   });
-  // debris ring (the Shatter)
+  // debris ring (the Shatter) — one instanced draw call for 240 shards
   const ring=new THREE.Group(); const rng2=mulberry32(13);
   const dgeo=new THREE.BoxGeometry(4,1.5,2.5), dmat=new THREE.MeshBasicMaterial({color:0x39435a, fog:false});
+  const ringMesh=new THREE.InstancedMesh(dgeo, dmat, 240);
+  const dummy=new THREE.Object3D();
   for(let i=0;i<240;i++){
-    const m=new THREE.Mesh(dgeo,dmat);
     const a=rng2()*Math.PI*2, r=560+rng2()*240;
-    m.position.set(Math.cos(a)*r, 240+Math.sin(a*3)*46, Math.sin(a)*r);
-    m.rotation.set(rng2()*3, rng2()*3, rng2()*3);
-    const s=0.5+rng2()*2.4; m.scale.setScalar(s);
-    ring.add(m);
+    dummy.position.set(Math.cos(a)*r, 240+Math.sin(a*3)*46, Math.sin(a)*r);
+    dummy.rotation.set(rng2()*3, rng2()*3, rng2()*3);
+    dummy.scale.setScalar(0.5+rng2()*2.4);
+    dummy.updateMatrix();
+    ringMesh.setMatrixAt(i, dummy.matrix);
   }
+  ringMesh.instanceMatrix.needsUpdate=true;
+  ringMesh.frustumCulled=false;
+  ring.add(ringMesh);
   ring.rotation.z=0.16; scene.add(ring);
   scene.userData.ring=ring;
   // lights (kept as module refs so the day/night cycle can drive them)
@@ -432,14 +437,49 @@ function scatterDecor(){
       }
     }
   }
-  const rock=rng=>{ const s=0.5+rng()*1.3; const m=new THREE.Mesh(new THREE.IcosahedronGeometry(s,0), mat(0x4a4e58)); m.position.y=s*0.5; const g=new THREE.Group(); g.add(m); return g; };
-  const tree=rng=>{
-    const g=new THREE.Group(); const h=3+rng()*3.4;
-    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.2,h*0.45,6), mat(0x6a7a72)); trunk.position.y=h*0.22; g.add(trunk);
-    const crown=new THREE.Mesh(new THREE.ConeGeometry(0.9+rng()*0.7, h*0.8, 6),
-      mat(0x7fd8c8,{transparent:true, opacity:0.72, emissive:0x1a5a50, emissiveIntensity:0.35}));
-    crown.position.y=h*0.45+h*0.35; g.add(crown); return g;
-  };
+  // — instanced scatter machinery: one draw call per shape, not per object —
+  function scatterPositions(r, count, minD){
+    const out=[];
+    for(let i=0;i<count;i++){
+      for(let tries=0;tries<14;tries++){
+        const a=rng()*Math.PI*2, d=Math.sqrt(rng())*(r.r-6);
+        const x=r.x+Math.cos(a)*d, z=r.z+Math.sin(a)*d;
+        if(walkField(x,z)<0.6 || waterDepth(x,z)>0.1) continue;
+        let near=false;
+        for(const e of ents) if(Math.hypot(e.x-x,e.z-z)<5){ near=true; break; }
+        if(near) continue;
+        out.push({x, z, g:heightAt(x,z)});
+        if(minD) obstacles.push({x, z, r:minD});
+        break;
+      }
+    }
+    return out;
+  }
+  function buildInstanced(geo, material, items){
+    if(!items.length) return;
+    const im=new THREE.InstancedMesh(geo, material, items.length);
+    const o=new THREE.Object3D();
+    items.forEach((it,i)=>{
+      o.position.set(it.x, it.y, it.z);
+      o.rotation.set(0, it.ry||0, it.rz||0);
+      o.scale.set(it.sx||1, it.sy||1, it.sz||1);
+      o.updateMatrix();
+      im.setMatrixAt(i, o.matrix);
+    });
+    im.instanceMatrix.needsUpdate=true;
+    scene.add(im);
+  }
+  // trees (trunks + crowns), rocks, spikes, ashrocks, spires, crags, slabs — all batched
+  const trunkItems=[], crownItems=[], rockItems=[], spikeItems=[], ashItems=[], spireItems=[], cragItems=[], slabItems=[];
+  function treeAt(p){
+    const h=3+rng()*3.4, cr=0.9+rng()*0.7, ry=rng()*Math.PI*2;
+    trunkItems.push({x:p.x, y:p.g+h*0.225, z:p.z, sy:h*0.45, sx:1, sz:1, ry});
+    crownItems.push({x:p.x, y:p.g+h*0.8, z:p.z, sx:cr, sy:h*0.8, sz:cr, ry});
+  }
+  function rockAt(p, bucket, yk){
+    const s=0.5+rng()*1.3;
+    bucket.push({x:p.x, y:p.g+s*(yk||0.5), z:p.z, sx:s, sy:s, sz:s, ry:rng()*Math.PI*2});
+  }
   const wreck=rng=>{
     const g=new THREE.Group();
     for(let i=0;i<2+Math.floor(rng()*2);i++){
@@ -448,37 +488,51 @@ function scatterDecor(){
     }
     return g;
   };
-  const spike=rng=>{ const g=new THREE.Group(); const h=1.6+rng()*3;
-    const m=new THREE.Mesh(new THREE.ConeGeometry(0.5+rng()*0.5,h,5), mat(0xd8ecf4,{transparent:true, opacity:0.92})); m.position.y=h/2; g.add(m); return g; };
   const pillar=rng=>{ const g=new THREE.Group(); const h=2.5+rng()*4;
     const m=box(0.9,h,0.9, 0x4e4660,{emissive:0x241e34, emissiveIntensity:0.4}); m.position.y=h/2; m.rotation.y=rng(); g.add(m);
     if(rng()<0.4){ const top=box(1.3,0.3,1.3, 0x5a526c); top.position.y=h+0.15; g.add(top); }
     return g; };
-  const ashrock=rng=>{ const s=0.5+rng()*1.1; const m=new THREE.Mesh(new THREE.IcosahedronGeometry(s,0), mat(0x2e3238)); m.position.y=s*0.45; const g=new THREE.Group(); g.add(m); return g; };
-  place(regionByZone.glasswood, tree, 74, 0.7);
-  place(regionByZone.meridian, tree, 8, 0.7);
-  place(regionByZone.meridian, rock, 8, 0.8);
+  // gather positions, then batch
+  scatterPositions(regionByZone.glasswood, 74, 0.7).forEach(treeAt);
+  scatterPositions(regionByZone.meridian, 8, 0.7).forEach(treeAt);
+  scatterPositions(regionByZone.meridian, 8, 0.8).forEach(p=>rockAt(p, rockItems));
   place(regionByZone.rustflats, wreck, 27, 1.3);
-  place(regionByZone.rustflats, rock, 8, 0.8);
-  place(regionByZone.kelvin, spike, 24, 0.7);
-  place(regionByZone.kelvin, rock, 6, 0.8);
+  scatterPositions(regionByZone.rustflats, 8, 0.8).forEach(p=>rockAt(p, rockItems));
+  scatterPositions(regionByZone.kelvin, 24, 0.7).forEach(p=>{
+    const h=1.6+rng()*3, w=0.5+rng()*0.5;
+    spikeItems.push({x:p.x, y:p.g+h/2, z:p.z, sx:w, sy:h, sz:w, ry:rng()*Math.PI*2});
+  });
+  scatterPositions(regionByZone.kelvin, 6, 0.8).forEach(p=>rockAt(p, rockItems));
   place(regionByZone.undervault, pillar, 16, 0.8);
-  place(regionByZone.cinder, ashrock, 16, 0.8);
-  place(regionByZone.haven, rock, 4, 0.8);
-  // Ashvale: charred spires and ember-lit cinders
-  const burntSpire=rng=>{ const g=new THREE.Group(); const h=2+rng()*3.2;
-    const m=new THREE.Mesh(new THREE.ConeGeometry(0.34+rng()*0.3, h, 5), mat(0x2a221e,{map:TEX.rock})); m.position.y=h/2; g.add(m);
-    if(rng()<0.45){ const ember=new THREE.Mesh(new THREE.SphereGeometry(0.1,6,6), mat(0xff7a3a,{emissive:0xc8521a, emissiveIntensity:1.2})); ember.position.set(0.3, 0.3+rng()*0.8, 0.2); g.add(ember); }
-    return g; };
-  place(regionByZone.ashvale, burntSpire, 22, 0.7);
-  place(regionByZone.ashvale, ashrock, 12, 0.8);
-  // The Crown: wind-carved crags and frost slabs
-  const crag=rng=>{ const g=new THREE.Group(); const s=0.8+rng()*1.6;
-    const m=new THREE.Mesh(new THREE.IcosahedronGeometry(s,0), mat(0x8a94a4,{map:TEX.rock})); m.position.y=s*0.55; m.scale.y=1.5+rng(); g.add(m); return g; };
-  const slab=rng=>{ const g=new THREE.Group();
-    const m=texBox(1.6+rng()*1.4, 0.3, 1+rng(), 0xaab4c4, TEX.rock); m.position.y=0.2; m.rotation.y=rng()*3; m.rotation.z=(rng()-0.5)*0.3; g.add(m); return g; };
-  place(regionByZone.crown, crag, 18, 0.9);
-  place(regionByZone.crown, slab, 10, 0.8);
+  scatterPositions(regionByZone.cinder, 16, 0.8).forEach(p=>rockAt(p, ashItems, 0.45));
+  scatterPositions(regionByZone.haven, 4, 0.8).forEach(p=>rockAt(p, rockItems));
+  // Ashvale: charred spires (instanced) with a few standalone embers
+  scatterPositions(regionByZone.ashvale, 22, 0.7).forEach(p=>{
+    const h=2+rng()*3.2, w=0.34+rng()*0.3;
+    spireItems.push({x:p.x, y:p.g+h/2, z:p.z, sx:w, sy:h, sz:w, ry:rng()*Math.PI*2});
+    if(rng()<0.45){
+      const ember=new THREE.Mesh(new THREE.SphereGeometry(0.1,6,6), mat(0xff7a3a,{emissive:0xc8521a, emissiveIntensity:1.2}));
+      ember.position.set(p.x+0.3, p.g+0.3+rng()*0.8, p.z+0.2); scene.add(ember);
+    }
+  });
+  scatterPositions(regionByZone.ashvale, 12, 0.8).forEach(p=>rockAt(p, ashItems, 0.45));
+  // The Crown: wind-carved crags and frost slabs (instanced)
+  scatterPositions(regionByZone.crown, 18, 0.9).forEach(p=>{
+    const s=0.8+rng()*1.6;
+    cragItems.push({x:p.x, y:p.g+s*0.55, z:p.z, sx:s, sy:s*(1.5+rng()), sz:s, ry:rng()*Math.PI*2});
+  });
+  scatterPositions(regionByZone.crown, 10, 0.8).forEach(p=>{
+    slabItems.push({x:p.x, y:p.g+0.2, z:p.z, sx:1.6+rng()*1.4, sy:0.3, sz:1+rng(), ry:rng()*3, rz:(rng()-0.5)*0.3});
+  });
+  // build the batches — eight draw calls for hundreds of objects
+  buildInstanced(new THREE.CylinderGeometry(0.12,0.2,1,6), mat(0x6a7a72), trunkItems);
+  buildInstanced(new THREE.ConeGeometry(1,1,6), mat(0x7fd8c8,{transparent:true, opacity:0.72, emissive:0x1a5a50, emissiveIntensity:0.35}), crownItems);
+  buildInstanced(new THREE.IcosahedronGeometry(1,0), mat(0x4a4e58), rockItems);
+  buildInstanced(new THREE.ConeGeometry(1,1,5), mat(0xd8ecf4,{transparent:true, opacity:0.92}), spikeItems);
+  buildInstanced(new THREE.IcosahedronGeometry(1,0), mat(0x2e3238), ashItems);
+  buildInstanced(new THREE.ConeGeometry(1,1,5), mat(0x2a221e,{map:TEX.rock}), spireItems);
+  buildInstanced(new THREE.IcosahedronGeometry(1,0), mat(0x8a94a4,{map:TEX.rock}), cragItems);
+  buildInstanced(new THREE.BoxGeometry(1,1,1), mat(0xaab4c4,{map:TEX.rock}), slabItems);
   // the Meridian wreck at camp
   const mr=regionByZone.meridian;
   const hull=new THREE.Group();

@@ -77,9 +77,9 @@ var KR_DATA = (function(){
   I('seared_skimmerling','Seared Skimmerling','🍢','meal', 8, 'Frontier classic, seared on a vent grill.', {heal:8});
   I('glowfin_skewer', 'Glowfin Skewer',  '🍡','meal', 14, 'Still glows a little going down.', {heal:15});
   I('razorjaw_steak', 'Razorjaw Steak',  '🥩','meal', 26, 'Dense, peppery, dangerous to overcook.', {heal:24});
-  I('pulse_eel_soup', 'Pulse Eel Soup',  '🍲','meal', 45, 'Tingles. Duskpetal rounds out the broth.', {heal:35});
-  I('mirrorscale_feast','Mirrorscale Feast','🍱','meal',70, 'Banquet-grade. Pyrelace smoke finish.', {heal:48});
-  I('riftmaw_banquet','Riftmaw Banquet', '🍛','meal',110, 'The finest table in the Reach.', {heal:70});
+  I('pulse_eel_soup', 'Pulse Eel Soup',  '🍲','meal', 49, 'Tingles. Duskpetal rounds out the broth.', {heal:35});
+  I('mirrorscale_feast','Mirrorscale Feast','🍱','meal',78, 'Banquet-grade. Pyrelace smoke finish.', {heal:48});
+  I('riftmaw_banquet','Riftmaw Banquet', '🍛','meal',124, 'The finest table in the Reach.', {heal:70});
   // stims (chemistry) — temporary buffs
   I('solvent',        'Industrial Solvent','🧴','material',5,'Base reagent for every stim recipe.');
   I('focus_stim',     'Focus Stim',      '💉','stim', 40, '+4 to gathering skills for 3 minutes.', {buff:{skills:'gather', amt:4, dur:180}});
@@ -151,7 +151,7 @@ var KR_DATA = (function(){
   I('obsidite_bulwark','Obsidite Bulwark','🛡','gear',2800,'A wall the Reach respects.',                 {slot:'suit', def:50, hpb:33});
   I('obsidite_gaze',  'Obsidite Gaze',   '🪖','gear',1400, 'See everything. Reveal nothing.',            {slot:'visor', def:26, hpb:14});
   // late meals & stims
-  I('voidglass_terrine','Voidglass Terrine','🫕','meal',150,'Haute cuisine from the bottom of the dark.', {heal:90});
+  I('voidglass_terrine','Voidglass Terrine','🫕','meal',162,'Haute cuisine from the bottom of the dark.', {heal:90});
   I('phase_stim',     'Phase Stim',      '💠','stim',320, 'All actions 20% faster for 2.5 minutes.', {buff:{speed:0.20, dur:150}});
   // late gadgets & tools
   I('stabilizer_rig', 'Stabilizer Rig',  '🧷','gear',1800, '+15 Defense, +10 hull while equipped.', {slot:'gadget', def:15, hpb:10});
