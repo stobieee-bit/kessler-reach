@@ -131,12 +131,12 @@ function freshState(callsign){
     skills, cargo:{}, gear:{weapon:null, suit:null, visor:null, multitool:null, gadget:null},
     zone:'meridian', pos:{x:D.WORLD.camp.x, z:D.WORLD.camp.z},
     unlockedZones:[], seenZones:[], visited:[], contracts:[], unlockedShops:[],
-    event:null, nextEventAt:0, milestonesHit:[], hints:[], adren:0,
+    event:null, nextEventAt:0, milestonesHit:[], hints:[], adren:0, plots:{},
     action:null, combat:null,
     quests:{}, buffs:[], notifiedQ:[],
     settings:{autoEat:true, eatAt:0.45, sound:true, music:true, vol:{master:0.8, sfx:1, music:0.7}},
     tracked:null, achievements:[],
-    log:[], stats:{kills:0, deaths:0, actionsDone:0, crEarned:0, alphaKills:0, contractsDone:0, cachesOpened:0, crits:0, eventXp:0},
+    log:[], stats:{kills:0, deaths:0, actionsDone:0, crEarned:0, alphaKills:0, contractsDone:0, cachesOpened:0, crits:0, eventXp:0, harvests:0, starHarvests:0},
   };
 }
 function migrate(s){
@@ -478,6 +478,17 @@ function completeAction(a, report){
         if(report) report.items.anomaly_cache=(report.items.anomaly_cache||0)+1;
         else { toast('<b>Anomaly Cache</b> found!','quest'); sndLoot(); addLog('Found a sealed Anomaly Cache.','gold'); }
       }
+      // flora sometimes comes up with a viable seed
+      if(a.skill==='xenobotany' && a.outputs){
+        for(const k in a.outputs){
+          const seed = D.SEED_DROPS[k];
+          if(seed && Math.random()<0.12){
+            addItem(seed, 1);
+            if(report) report.items[seed]=(report.items[seed]||0)+1;
+            else KRWorld.splat('player', '+1 '+D.ITEMS[seed].name, 'yield');
+          }
+        }
+      }
     }
     if(a.type==='craft'){
       const critChance = 0.05 + skillLevel(a.skill)*0.0012;   // 5% → ~17% at level 100
@@ -527,6 +538,45 @@ function tickAction(dt){
     if(state.action && a.inputs && !hasInputs(a)) stopAction('Ran out of materials.');
     markDirty('float');
   }
+}
+
+/* ================= hydroponics ================= */
+function plotInfo(uid){
+  const p = state && state.plots ? state.plots[uid] : null;
+  if(!p) return {empty:true};
+  const sd = D.SEEDS[p.seed];
+  if(!sd){ delete state.plots[uid]; return {empty:true}; }
+  const total = sd.mins*60000;
+  const pct = clamp((Date.now()-p.plantedAt)/total, 0, 1);
+  return {empty:false, seed:p.seed, sd, pct, ready:pct>=1,
+    leftSec: Math.max(0, Math.ceil((total-(Date.now()-p.plantedAt))/1000))};
+}
+function plantSeed(uid, seedId){
+  const sd = D.SEEDS[seedId];
+  if(!sd || countItem(seedId)<1) return;
+  if(skillLevel('hydroponics') < sd.lvl){ toast(`<b>Requires Hydroponics ${sd.lvl}.</b>`,'bad'); return; }
+  if(state.plots[uid]) return;
+  removeItem(seedId, 1);
+  state.plots[uid] = {seed:seedId, plantedAt:Date.now()};
+  gainXp('hydroponics', sd.plantXp);
+  sfxGather();
+  addLog(`Planted ${D.ITEMS[seedId].name} — ready in ${sd.mins} min.`);
+  markDirty('float');
+}
+function harvestPlot(uid){
+  const info = plotInfo(uid);
+  if(info.empty || !info.ready) return;
+  const sd = info.sd;
+  const qty = rint(sd.yield[0], sd.yield[1]);
+  addItem(sd.crop, qty);
+  delete state.plots[uid];
+  gainXp('hydroponics', sd.harvestXp);
+  state.stats.harvests = (state.stats.harvests||0)+1;
+  if(sd.crop==='starfruit') state.stats.starHarvests = (state.stats.starHarvests||0)+1;
+  KRWorld.splat('player', `+${qty} ${D.ITEMS[sd.crop].name}`, 'yield');
+  sfxGather(); sndLoot();
+  addLog(`Harvested ${D.ITEMS[sd.crop].name} ×${qty}.`,'good');
+  markDirty('float','side');
 }
 
 /* ================= special attacks ================= */
@@ -863,6 +913,8 @@ const ACHIEVEMENTS = [
   {id:'charted',     icon:'🗺', name:'Cartographer',       desc:'Chart all seven regions',                check:s=>s.visited.length>=7},
   {id:'friends',     icon:'🤝', name:'Friend of the Reach',desc:'Earn every settlement trader\'s trust',  check:s=>s.unlockedShops.length>=4},
   {id:'storm',       icon:'⚡', name:'Storm Chaser',       desc:'Earn 5,000 bonus XP from world events',  check:s=>s.stats.eventXp>=5000},
+  {id:'green',       icon:'🌾', name:'Green Thumb',        desc:'Harvest 10 crops',                       check:s=>(s.stats.harvests||0)>=10},
+  {id:'starfarmer',  icon:'🌠', name:'Star Farmer',        desc:'Harvest a starfruit crop',               check:s=>(s.cargo.starfruit||0)>0 || (s.stats.starHarvests||0)>0},
   {id:'hardy',       icon:'🛡', name:'Hard to Kill',       desc:'Total level 300 with zero deaths',       check:s=>s.stats.deaths===0 && D.SKILLS.reduce((t,k)=>t+levelFor(s.skills[k.id].xp),0)>=300},
 ];
 function checkAchievements(){
@@ -1039,6 +1091,7 @@ const worldApi = {
   isZoneUnlocked,
   getEvent(){ const ev=activeEvent(); return ev ? {zone:ev.zone, icon:ev.icon} : null; },
   combatTarget: ()=> state && state.combat ? state.combat.ent : null,
+  plotInfo,
   actionProgress(){
     if(!state || !state.action) return null;
     const a = D.ACTIONS[state.action.id];
@@ -1091,6 +1144,11 @@ const worldApi = {
     else if(ent.kind==='npc') openTalk(ent.npcId, ent.uid);
     else if(ent.kind==='hangar') openFloat({type:'hangar', uid:ent.uid});
     else if(ent.kind==='board') openFloat({type:'board', uid:ent.uid});
+    else if(ent.kind==='plot'){
+      const info = plotInfo(ent.uid);
+      if(info.ready) harvestPlot(ent.uid);
+      else openFloat({type:'plot', uid:ent.uid});
+    }
     else if(ent.kind==='enemy') engage(ent);
     else if(ent.kind==='gate'){
       if(!isZoneUnlocked(ent.zone)){
@@ -1115,6 +1173,12 @@ const worldApi = {
     }
     if(ent.kind==='hangar') return {text:'🚀 Hangar Pad', sub:'flight contracts (Piloting)', ok:true};
     if(ent.kind==='board') return {text:'📋 Contract Board', sub:'repeatable bounties', ok:true};
+    if(ent.kind==='plot'){
+      const info = plotInfo(ent.uid);
+      if(info.empty) return {text:'🌾 Hydroponic Bed', sub:'plant a seed (Hydroponics)', ok:true};
+      if(info.ready) return {text:`🌾 ${D.ITEMS[info.sd.crop].name}`, sub:'ready — click to harvest!', ok:true};
+      return {text:`🌾 ${D.ITEMS[info.seed].name}`, sub:`growing — ${fmtDur(info.leftSec)} left`, ok:true};
+    }
     if(ent.kind==='gate'){
       const z = D.ZONES[ent.zone];
       const open = isZoneUnlocked(ent.zone);
@@ -1295,6 +1359,30 @@ function renderFloat(){
     title = `🚀 Hangar Pad — Piloting ${skillLevel('piloting')}`;
     const runs = Object.values(D.ACTIONS).filter(a=>a.type==='pilot').sort((x,y)=>x.lvl-y.lvl);
     body = runs.map(pilotRow).join('');
+  }else if(ui.float.type==='plot'){
+    const info = plotInfo(ui.float.uid);
+    title = '🌾 Hydroponic Bed — Hydroponics '+skillLevel('hydroponics');
+    if(info.empty){
+      const owned = Object.keys(D.SEEDS).filter(s=>countItem(s)>0);
+      body = owned.length ? owned.map(s=>{
+        const sd=D.SEEDS[s], ok=skillLevel('hydroponics')>=sd.lvl;
+        return `<div class="act-card ${ok?'':'locked'}">
+          <div class="act-top"><span class="act-ico">${sd.icon}</span><span class="act-name">${D.ITEMS[s].name}</span>
+          <span class="act-lvl ${ok?'':'no'}">🌾 ${sd.lvl}</span></div>
+          <div class="act-meta">×${countItem(s)} owned · grows ${D.ITEMS[sd.crop].name} ×${sd.yield[0]}–${sd.yield[1]} in ${sd.mins} min · ${sd.harvestXp} xp</div>
+          <div class="act-foot">${ok
+            ? `<button class="btn primary tiny" data-plant="${s}">Plant</button>`
+            : `<button class="btn" disabled>Requires Hydroponics ${sd.lvl}</button>`}</div>
+        </div>`;
+      }).join('') : '<div class="empty-note">No seeds in your cargo. Flora sometimes drops them while picking — Greenhand Fenn at Verdant Hollow stocks the basics.</div>';
+    }else{
+      body = `<div class="act-card ${info.ready?'active':''}">
+        <div class="act-top"><span class="act-ico">${info.sd.icon}</span><span class="act-name">${D.ITEMS[info.seed].name}</span></div>
+        <div class="act-meta">${info.ready ? 'Ready to harvest!' : 'Ripens in '+fmtDur(info.leftSec)+' — even while you\'re away.'}</div>
+        <div class="bar"><i style="width:${Math.round(info.pct*100)}%"></i></div>
+        <div class="act-foot">${info.ready ? `<button class="btn gold" data-harvest="1">Harvest</button>` : '<span class="act-meta">growing…</span>'}</div>
+      </div>`;
+    }
   }else if(ui.float.type==='board'){
     title = '📋 Contract Board';
     ensureContracts();
@@ -1690,7 +1778,9 @@ function showSkillGuide(skillId){
   }).join('');
   showModal(`<h2>${sd.icon} ${sd.name} — level ${lvl}</h2><p>${sd.desc}</p>
     <p style="color:var(--acc)">${fmt(skillXp(skillId))} xp${lvl<MAXL?' · '+fmt(XP_TABLE[lvl+1]-skillXp(skillId))+' to level '+(lvl+1):' · MAX LEVEL'}</p>
-    ${rows || '<p>Trained through combat and missions.</p>'}
+    ${rows || (skillId==='hydroponics'
+      ? '<p>Trained at hydroponic beds across the settlements: plant seeds (found while picking flora, or from Greenhand Fenn), and harvest when they ripen — crops grow in real time, even while you\'re away. Higher seeds: Dusk 40 · Pyre 55 · Void 70 · Star 85.</p>'
+      : '<p>Trained through combat and missions.</p>')}
     <div class="m-btns"><button class="btn primary" data-close-modal="1">Close</button></div>`);
 }
 
@@ -1730,7 +1820,7 @@ function renderAll(){
 /* ================= events ================= */
 document.addEventListener('click', e=>{
   if(state && state.settings.sound){ if(!ambient) startAmbient(); if(!music) startMusic(); }
-  const t = e.target.closest('[data-sidetab],[data-start],[data-stop],[data-sel],[data-equip],[data-unequip],[data-use],[data-sell],[data-buy],[data-quest],[data-qstart],[data-qclaim],[data-qtrack],[data-skill],[data-close-modal],[data-closefloat],[data-contract],[data-dlgnext],[data-dlgaccept],[data-dlgturnin],[data-dlgtrade]');
+  const t = e.target.closest('[data-sidetab],[data-start],[data-stop],[data-sel],[data-equip],[data-unequip],[data-use],[data-sell],[data-buy],[data-quest],[data-qstart],[data-qclaim],[data-qtrack],[data-skill],[data-close-modal],[data-closefloat],[data-contract],[data-dlgnext],[data-dlgaccept],[data-dlgturnin],[data-dlgtrade],[data-plant],[data-harvest]');
   if(t) blip(740, .035, 'sine', .015);   // soft UI tick
   if(t && t.tagName==='BUTTON') t.blur();   // Space must fire specials, never re-click the last button
   if(!t){
@@ -1765,6 +1855,8 @@ document.addEventListener('click', e=>{
   else if(d.closeModal){ closeModal(); }
   else if(d.closefloat){ closeFloat(); }
   else if(d.contract!==undefined){ claimContract(parseInt(d.contract,10)); }
+  else if(d.plant){ if(ui.float && ui.float.type==='plot') plantSeed(ui.float.uid, d.plant); }
+  else if(d.harvest){ if(ui.float && ui.float.type==='plot'){ harvestPlot(ui.float.uid); closeFloat(); } }
 });
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){
@@ -1829,6 +1921,7 @@ setInterval(()=>{
   mapT += dt;
   if(mapT>1){ mapT=0;
     if(ui.sideTab==='map'){ const cv=$('#mmap'); if(cv) KRWorld.drawMinimap(cv); }
+    if(ui.float && ui.float.type==='plot') renderFloat();   // live growth bar
     checkAchievements();
     renderTracker();
   }

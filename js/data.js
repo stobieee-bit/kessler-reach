@@ -23,10 +23,11 @@ var KR_DATA = (function(){
     {id:'psionics',     name:'Psionics',     icon:'🧠', cat:'combat',  desc:'Project will into force through neural resonators.'},
     {id:'resilience',   name:'Resilience',   icon:'🛡',  cat:'combat',  desc:'Shrug off damage. Trains as you endure hits.'},
     {id:'vitality',     name:'Vitality',     icon:'❤',  cat:'combat',  desc:'Raw constitution. Governs maximum hull integrity.'},
+    {id:'hydroponics',  name:'Hydroponics',  icon:'🌾', cat:'gather',  desc:'Grow crops in settlement plots. They ripen in real time — even while you\'re away.'},
     {id:'hacking',      name:'Hacking',      icon:'🔓', cat:'utility', desc:'Breach lockboxes, vault doors and dead datacores.'},
     {id:'piloting',     name:'Piloting',     icon:'🚀', cat:'utility', desc:'Fly the debris lanes. Unlocks farther destinations.'},
   ];
-  const GATHER_SKILLS = ['salvaging','extraction','xenobotany','trawling'];
+  const GATHER_SKILLS = ['salvaging','extraction','xenobotany','trawling','hydroponics'];
   const OFFENSE_SKILLS = ['kinetics','marksmanship','psionics'];
   const COMBAT_SKILLS = ['kinetics','marksmanship','psionics','resilience','vitality'];
 
@@ -128,6 +129,16 @@ var KR_DATA = (function(){
   I('scanner_array',  'Scanner Array',   '📡','gear',1500, 'Doubles anomaly-cache find chance.',       {slot:'gadget', scan:2});
   I('grapple_unit',   'Grapple Unit',    '🪢','gear', 900, '+15% Piloting experience.',                {slot:'gadget', pxp:0.15});
   I('warden_core',    'Warden Core',     '🫀','gear',5000, 'Heart of WARDEN-7. +5 Acc, +5 Def, +5% all XP.', {slot:'gadget', acc:5, def:5, xpb:0.05});
+  // hydroponics: seeds and crops
+  I('lumen_seed',  'Lumen Seed',      '🫘','seed', 6,  'Glows faintly even before it sprouts.');
+  I('spire_seed',  'Spire Seed',      '🫘','seed', 14, 'Chimes when shaken. Plant it anyway.');
+  I('resin_seed',  'Resin Seed',      '🫘','seed', 26, 'Sticky. Everything about glasswood is sticky.');
+  I('dusk_seed',   'Dusk Seed',       '🫘','seed', 44, 'Only germinates in the dark. Luckily, dirt is dark.');
+  I('pyre_seed',   'Pyre Seed',       '🫘','seed', 70, 'Warm to the touch. Do not pocket more than five.');
+  I('void_seed',   'Void Seed',       '🫘','seed', 116,'It hums the same note as the Undervault door.');
+  I('star_seed',   'Star Seed',       '✨','seed', 240,'Fell from the ring, swears Iva. Plant it and see.');
+  I('starfruit',   'Starfruit',       '🌠','material', 95, 'Sweet, luminous, and faintly orbital.');
+  I('starfruit_sunrise','Starfruit Sunrise','🍹','meal', 200, 'Brinemoor\'s festival drink, perfected.', {heal:100});
   // late-game gathering materials (fills levels 60–90)
   I('brinemetal_plate','Brinemetal Plate','🩸','material',55,'Corrosion-proof plating cut from the drowned freighter.');
   I('echo_bloom',     'Echo Bloom',      '🌸','material',80, 'A flower that repeats sounds from fifty years ago.');
@@ -231,6 +242,7 @@ var KR_DATA = (function(){
   A('sy_feast',    {type:'craft', skill:'synthesis', lvl:52, xp:86,  time:2.8, name:'Mirrorscale Feast',  icon:'🍱', facility:'galley', inputs:{mirrorscale:1, pyrelace_fern:1}, outputs:{mirrorscale_feast:1}});
   A('sy_banquet',  {type:'craft', skill:'synthesis', lvl:72, xp:132, time:3.0, name:'Riftmaw Banquet',    icon:'🍛', facility:'galley', inputs:{riftmaw:1, voidlotus:1}, outputs:{riftmaw_banquet:1}});
   A('sy_terrine',  {type:'craft', skill:'synthesis', lvl:85, xp:160, time:3.2, name:'Voidglass Terrine',  icon:'🫕', facility:'galley', inputs:{phasefin:1, echo_bloom:1}, outputs:{voidglass_terrine:1}});
+  A('sy_sunrise',  {type:'craft', skill:'synthesis', lvl:90, xp:190, time:3.4, name:'Starfruit Sunrise',  icon:'🍹', facility:'galley', inputs:{starfruit:1, spirefruit:2}, outputs:{starfruit_sunrise:1}});
   // -- chemistry
   A('ch_focus',    {type:'craft', skill:'chemistry', lvl:8,  xp:30,  time:3.0, name:'Focus Stim',   icon:'💉', facility:'chemlab', inputs:{spirefruit:2, solvent:1}, outputs:{focus_stim:1}});
   A('ch_combat',   {type:'craft', skill:'chemistry', lvl:25, xp:52,  time:3.2, name:'Combat Stim',  icon:'💉', facility:'chemlab', inputs:{glasswood_resin:2, solvent:1}, outputs:{combat_stim:1}});
@@ -280,7 +292,7 @@ var KR_DATA = (function(){
   E('vault_sentinel', {name:'Vault Sentinel',   icon:'🤖', lvl:70, hp:470, acc:98,  def:88,  hit:27, spd:3.0, aggro:true, zones:['undervault'], credits:[110,220], loot:[{item:'relic_circuitry', qty:[1,2], chance:0.35},{item:'vault_sigil', qty:[1,1], chance:0.25}]});
   E('hollow_custodian',{name:'Hollow Custodian', icon:'🗿', lvl:80, hp:590, acc:112, def:100, hit:32, spd:3.2, aggro:true, zones:['undervault'], credits:[150,300], loot:[{item:'vault_sigil', qty:[1,1], chance:0.35},{item:'neutronite_ore', qty:[1,2], chance:0.4},{item:'anomaly_cache', qty:[1,1], chance:0.1}]});
   E('rust_titan',     {name:'Rust Titan',       icon:'🏗', lvl:56, hp:330, acc:76,  def:70,  hit:21, spd:3.4, zones:['rustflats'], credits:[70,140],  loot:[{item:'servo_parts', qty:[2,4], chance:0.6},{item:'hullweave_mesh', qty:[1,2], chance:0.4},{item:'anomaly_cache', qty:[1,1], chance:0.1}]});
-  E('echo_shade',     {name:'Echo Shade',       icon:'👤', lvl:75, hp:520, acc:104, def:92,  hit:29, spd:2.6, aggro:true, zones:['undervault'], credits:[130,260], loot:[{item:'echo_bloom', qty:[1,2], chance:0.4},{item:'relic_circuitry', qty:[1,1], chance:0.2},{item:'vault_sigil', qty:[1,1], chance:0.15}]});
+  E('echo_shade',     {name:'Echo Shade',       icon:'👤', lvl:75, hp:520, acc:104, def:92,  hit:29, spd:2.6, aggro:true, zones:['undervault'], credits:[130,260], loot:[{item:'echo_bloom', qty:[1,2], chance:0.4},{item:'relic_circuitry', qty:[1,1], chance:0.2},{item:'vault_sigil', qty:[1,1], chance:0.15},{item:'star_seed', qty:[1,1], chance:0.18}]});
   E('shard_golem',    {name:'Shard Golem',      icon:'🧊', lvl:85, hp:660, acc:120, def:108, hit:34, spd:3.4, aggro:true, zones:['kelvin'], credits:[170,340], loot:[{item:'neutronite_ore', qty:[1,2], chance:0.5},{item:'obsidite_ore', qty:[1,2], chance:0.5},{item:'anomaly_cache', qty:[1,1], chance:0.12}]});
   E('warden_7',       {name:'WARDEN-7',         icon:'👁', lvl:90, hp:880, acc:130, def:115, hit:38, spd:3.0, aggro:true, zones:['undervault'], boss:true, credits:[800,1500], loot:[{item:'neutronite_bar', qty:[2,4], chance:1},{item:'anomaly_cache', qty:[1,2], chance:0.6},{item:'relic_circuitry', qty:[2,3], chance:0.8}]});
 
@@ -422,6 +434,9 @@ var KR_DATA = (function(){
       {item:'patchwork_visor', price:180},
     ]},
     fenn: {name:'Greenhand Fenn', gatedBy:'q13', stock:[
+      {item:'lumen_seed', price:15},
+      {item:'spire_seed', price:35},
+      {item:'resin_seed', price:65},
       {item:'spirefruit', price:18},
       {item:'glasswood_resin', price:32},
       {item:'solvent', price:13},
@@ -632,6 +647,23 @@ var KR_DATA = (function(){
         'Echo blooms grow thicker near the door every year. Something in there is gardening.']}]},
   ];
 
+  /* ---------------- hydroponics ----------------
+     Crops grow in real time (timestamps, so they ripen offline too).
+     Seeds drop while gathering matching flora, or from vendors.       */
+  const SEEDS = {
+    lumen_seed: {lvl:1,  mins:5,  crop:'lumen_moss',     yield:[4,8], plantXp:15,  harvestXp:60,  icon:'🌱'},
+    spire_seed: {lvl:12, mins:8,  crop:'spirefruit',     yield:[4,8], plantXp:25,  harvestXp:110, icon:'🍐'},
+    resin_seed: {lvl:25, mins:12, crop:'glasswood_resin',yield:[4,8], plantXp:40,  harvestXp:190, icon:'🫧'},
+    dusk_seed:  {lvl:40, mins:16, crop:'duskpetal',      yield:[4,8], plantXp:60,  harvestXp:300, icon:'🥀'},
+    pyre_seed:  {lvl:55, mins:20, crop:'pyrelace_fern',  yield:[4,8], plantXp:85,  harvestXp:430, icon:'🌺'},
+    void_seed:  {lvl:70, mins:25, crop:'voidlotus',      yield:[3,6], plantXp:115, harvestXp:600, icon:'🪷'},
+    star_seed:  {lvl:85, mins:30, crop:'starfruit',      yield:[3,5], plantXp:160, harvestXp:900, icon:'🌠'},
+  };
+  const SEED_DROPS = {            // gathering this flora sometimes yields its seed
+    lumen_moss:'lumen_seed', spirefruit:'spire_seed', glasswood_resin:'resin_seed',
+    duskpetal:'dusk_seed', pyrelace_fern:'pyre_seed', voidlotus:'void_seed',
+  };
+
   /* ---------------- dynamic world events ----------------
      Timed regional happenings; the bonus applies while you're
      in the event's region. The Reach never sits still.        */
@@ -777,6 +809,18 @@ var KR_DATA = (function(){
     ],
     hangar:{zone:'haven', dx:-26, dz:-6},
     board:{zone:'haven', dx:-8, dz:14},
+    plots:[                                  // hydroponic beds — most at the Hollow, a few everywhere
+      {zone:'meridian',  dx:18, dz:6},
+      {zone:'meridian',  dx:21, dz:10},
+      {zone:'rustflats', dx:-14, dz:-28},
+      {zone:'glasswood', dx:-6,  dz:-22},
+      {zone:'glasswood', dx:-2,  dz:-18},
+      {zone:'glasswood', dx:2,   dz:-14},
+      {zone:'cinder',    dx:-16, dz:6},
+      {zone:'kelvin',    dx:7,   dz:12},
+      {zone:'haven',     dx:-6,  dz:6},
+      {zone:'haven',     dx:-10, dz:2},
+    ],
     villages:[
       {id:'driftrock', name:'Driftrock',      zone:'rustflats',  dx:-18, dz:-34, kind:'shanty'},
       {id:'brinemoor', name:'Brinemoor',      zone:'cinder',     dx:-10, dz:14,  kind:'stilt'},
@@ -828,5 +872,5 @@ var KR_DATA = (function(){
     ],
   };
 
-  return {SKILLS, GATHER_SKILLS, OFFENSE_SKILLS, COMBAT_SKILLS, ITEMS, ACTIONS, ENEMIES, ZONES, ZONE_ORDER, QUESTS, QUEST_ORDER, SHOPS, NPCS, EVENTS, FACILITY_NAMES, UNARMED, MAX_LEVEL, INTRO_LORE, WORLD};
+  return {SKILLS, GATHER_SKILLS, OFFENSE_SKILLS, COMBAT_SKILLS, ITEMS, ACTIONS, ENEMIES, ZONES, ZONE_ORDER, QUESTS, QUEST_ORDER, SHOPS, NPCS, EVENTS, SEEDS, SEED_DROPS, FACILITY_NAMES, UNARMED, MAX_LEVEL, INTRO_LORE, WORLD};
 })();

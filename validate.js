@@ -102,7 +102,17 @@ Object.values(D.ACTIONS).filter(a=>(a.type==='gather'||a.type==='hack') && !a.qu
   (D.WORLD.villages||[]).forEach(v=>checkSpot('village '+v.id, v.zone, v.dx, v.dz, false));
   checkSpot('hangar', D.WORLD.hangar.zone, D.WORLD.hangar.dx, D.WORLD.hangar.dz, false);
   checkSpot('board', D.WORLD.board.zone, D.WORLD.board.dx, D.WORLD.board.dz, false);
+  (D.WORLD.plots||[]).forEach((p,i)=>checkSpot('plot#'+i+' @'+p.zone, p.zone, p.dx, p.dz, false));
 }
+// hydroponics integrity
+Object.entries(D.SEEDS).forEach(([id,sd])=>{
+  if(!D.ITEMS[id]) bad.push('seed item missing: '+id);
+  if(!D.ITEMS[sd.crop]) bad.push('seed crop missing: '+id+' -> '+sd.crop);
+});
+Object.entries(D.SEED_DROPS).forEach(([flora,seed])=>{
+  if(!D.ITEMS[flora]) bad.push('seed-drop flora missing: '+flora);
+  if(!D.SEEDS[seed]) bad.push('seed-drop seed missing: '+seed);
+});
 // every gear item referenced by a craft? (informational only)
 console.log(bad.length ? 'PROBLEMS:\n'+bad.join('\n') : 'ALL CROSS-REFERENCES OK');
 console.log(`items=${Object.keys(D.ITEMS).length} actions=${Object.keys(D.ACTIONS).length} enemies=${Object.keys(D.ENEMIES).length} zones=${Object.keys(D.ZONES).length} quests=${D.QUEST_ORDER.length}`);

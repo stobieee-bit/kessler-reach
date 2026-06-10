@@ -540,6 +540,19 @@ function buildEntities(){
       roam:n.roam||4, group:h.group, parts:h.parts, pick:1.5, range:3.5,
       wanderT:2+Math.random()*5, tgt:null, animT:Math.random()*9, moving:false});
   });
+  // hydroponic beds
+  (W.plots||[]).forEach((pl,i)=>{
+    const r=regionByZone[pl.zone]; const x=r.x+pl.dx, z=r.z+pl.dz;
+    const g=new THREE.Group();
+    const bed=texBox(1.7,0.36,1.3, 0x4a3a2a, TEX.plank); bed.position.y=0.18; g.add(bed);
+    const soil=texBox(1.5,0.1,1.1, 0x2e2218, TEX.ground); soil.position.y=0.4; g.add(soil);
+    const crop=new THREE.Mesh(new THREE.ConeGeometry(0.34,0.9,6), mat(0x6ae8a8,{emissive:0x1a8a48, emissiveIntensity:0.4}));
+    crop.position.y=0.85; crop.visible=false; g.add(crop); g.userData.crop=crop;
+    const glow=new THREE.Mesh(new THREE.TorusGeometry(0.85,0.05,6,18), mat(0xffd35c,{emissive:0xc89a2a, emissiveIntensity:1.2}));
+    glow.rotation.x=-Math.PI/2; glow.position.y=0.46; glow.visible=false; g.add(glow); g.userData.glow=glow;
+    addEnt({uid:'plot'+i, kind:'plot', x, z, group:g, pick:1.3, pickH:2, range:2.6});
+    obstacles.push({x, z, r:1});
+  });
   // contract board
   if(W.board){
     const r=regionByZone[W.board.zone]; const x=r.x+W.board.dx, z=r.z+W.board.dz;
@@ -1211,6 +1224,21 @@ function updateMisc(dt, t){
     clickMarker.material.opacity=Math.max(0, 0.9-clickMarker.userData.age*1.4);
     clickMarker.scale.setScalar(1+clickMarker.userData.age*1.3);
     if(clickMarker.material.opacity<=0) clickMarker.visible=false;
+  }
+  // crops grow visibly; ready beds glow
+  for(const e of ents){
+    if(e.kind!=='plot') continue;
+    const info = api.plotInfo ? api.plotInfo(e.uid) : {empty:true};
+    const crop=e.group.userData.crop, glow=e.group.userData.glow;
+    if(info.empty){ crop.visible=false; glow.visible=false; }
+    else{
+      crop.visible=true;
+      const s=0.25+0.75*info.pct;
+      crop.scale.setScalar(s);
+      crop.position.y=0.45+0.42*s;
+      glow.visible=info.ready;
+      if(info.ready) glow.rotation.z=t*1.2;
+    }
   }
   // node icon bobbing + working node pulse
   for(const e of ents){
