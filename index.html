@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Kessler Reach — a free browser skilling RPG in a 3D open world. Salvage, craft, fight and fly across a shattered frontier star system.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,6 90,28 90,72 50,94 10,72 10,28' fill='%230a0f18' stroke='%233fe0c8' stroke-width='9'/></svg>">
+<title>KESSLER REACH — frontier skilling RPG</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand" title="Kessler Reach"><span class="brand-a">KESSLER</span><span class="brand-b">REACH</span></div>
+    <div class="top-id" id="topCallsign"></div>
+    <div class="top-stat credits" title="Credits"><span class="cr-glyph">⬡</span><span id="topCredits">0</span><span class="cr-suffix">cr</span></div>
+    <div class="top-hp" title="Hull integrity (your health)">
+      <div class="hpbar"><div class="hpfill" id="topHpFill"></div><span class="hptext" id="topHpText"></span></div>
+    </div>
+    <div class="top-zone" id="topZone"></div>
+    <div class="top-buffs" id="topBuffs"></div>
+    <div class="top-icons">
+      <button id="btnSound" class="icon-btn" title="Toggle sound">♪</button>
+      <button id="btnSettings" class="icon-btn" title="Settings / Save">⚙</button>
+    </div>
+  </header>
+
+  <aside id="skillbar">
+    <div class="panel-head">SKILLS<span class="panel-sub" id="totalLevel"></span></div>
+    <div id="skillList"></div>
+  </aside>
+
+  <main id="main">
+    <div id="viewport">
+      <canvas id="gl"></canvas>
+      <div id="labels"></div>
+      <div id="regionFade"></div>
+      <div id="hint"></div>
+      <div id="floatPanel" class="hidden"></div>
+    </div>
+  </main>
+
+  <aside id="side">
+    <nav id="sideTabs" class="tabs"></nav>
+    <div id="sideContent" class="scrolly"></div>
+  </aside>
+
+  <footer id="logbar"></footer>
+</div>
+
+<div id="toasts"></div>
+<div id="modalRoot"></div>
+
+<script src="lib/three.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/world.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
