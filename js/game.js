@@ -910,7 +910,7 @@ const ACHIEVEMENTS = [
   {id:'cache10',     icon:'🎁', name:'Anomaly Magnet',     desc:'Open 10 anomaly caches',                 check:s=>s.stats.cachesOpened>=10},
   {id:'crit1',       icon:'✦',  name:'Masterwork',         desc:'Craft a masterwork',                     check:s=>s.stats.crits>=1},
   {id:'crit50',      icon:'⚒',  name:'Signature Series',   desc:'Craft 50 masterworks',                   check:s=>s.stats.crits>=50},
-  {id:'charted',     icon:'🗺', name:'Cartographer',       desc:'Chart all seven regions',                check:s=>s.visited.length>=7},
+  {id:'charted',     icon:'🗺', name:'Cartographer',       desc:'Chart all nine regions',                 check:s=>s.visited.length>=9},
   {id:'friends',     icon:'🤝', name:'Friend of the Reach',desc:'Earn every settlement trader\'s trust',  check:s=>s.unlockedShops.length>=4},
   {id:'storm',       icon:'⚡', name:'Storm Chaser',       desc:'Earn 5,000 bonus XP from world events',  check:s=>s.stats.eventXp>=5000},
   {id:'green',       icon:'🌾', name:'Green Thumb',        desc:'Harvest 10 crops',                       check:s=>(s.stats.harvests||0)>=10},

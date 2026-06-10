@@ -60,6 +60,14 @@ function heightAt(x,z){
   valley = lerp(valley, 1.1, hv);                       // station plateau
   const kv = regionWeight(regionByZone.kelvin, x, z);
   valley += kv * (0.9 + Math.max(0, fbm(x*0.1+3, z*0.1))*1.4);   // snowy bumps
+  if(regionByZone.crown){
+    const cw = regionWeight(regionByZone.crown, x, z);
+    valley += cw * (3.2 + Math.max(0, fbm(x*0.08+9, z*0.08))*1.2);  // the summit rises
+  }
+  if(regionByZone.ashvale){
+    const av = regionWeight(regionByZone.ashvale, x, z);
+    valley -= av * 0.5;                                  // the vale sits low in its own shadow
+  }
   let h = lerp(ridge, valley, sstep(wk));
   h -= waterDepth(x,z)*3.4;                              // carved pools / sea
   return h;
@@ -457,6 +465,20 @@ function scatterDecor(){
   place(regionByZone.undervault, pillar, 16, 0.8);
   place(regionByZone.cinder, ashrock, 16, 0.8);
   place(regionByZone.haven, rock, 4, 0.8);
+  // Ashvale: charred spires and ember-lit cinders
+  const burntSpire=rng=>{ const g=new THREE.Group(); const h=2+rng()*3.2;
+    const m=new THREE.Mesh(new THREE.ConeGeometry(0.34+rng()*0.3, h, 5), mat(0x2a221e,{map:TEX.rock})); m.position.y=h/2; g.add(m);
+    if(rng()<0.45){ const ember=new THREE.Mesh(new THREE.SphereGeometry(0.1,6,6), mat(0xff7a3a,{emissive:0xc8521a, emissiveIntensity:1.2})); ember.position.set(0.3, 0.3+rng()*0.8, 0.2); g.add(ember); }
+    return g; };
+  place(regionByZone.ashvale, burntSpire, 22, 0.7);
+  place(regionByZone.ashvale, ashrock, 12, 0.8);
+  // The Crown: wind-carved crags and frost slabs
+  const crag=rng=>{ const g=new THREE.Group(); const s=0.8+rng()*1.6;
+    const m=new THREE.Mesh(new THREE.IcosahedronGeometry(s,0), mat(0x8a94a4,{map:TEX.rock})); m.position.y=s*0.55; m.scale.y=1.5+rng(); g.add(m); return g; };
+  const slab=rng=>{ const g=new THREE.Group();
+    const m=texBox(1.6+rng()*1.4, 0.3, 1+rng(), 0xaab4c4, TEX.rock); m.position.y=0.2; m.rotation.y=rng()*3; m.rotation.z=(rng()-0.5)*0.3; g.add(m); return g; };
+  place(regionByZone.crown, crag, 18, 0.9);
+  place(regionByZone.crown, slab, 10, 0.8);
   // the Meridian wreck at camp
   const mr=regionByZone.meridian;
   const hull=new THREE.Group();

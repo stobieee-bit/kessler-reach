@@ -178,24 +178,24 @@ var KR_DATA = (function(){
   A('sv_scrap',    {type:'gather', skill:'salvaging', lvl:1,  xp:10,  time:2.8, name:'Hull Debris Field',    icon:'🔩', zones:['meridian','rustflats'], outputs:{scrap_plating:1}, flavor:'Pry plating off the Meridian\'s scattered hull.'});
   A('sv_coil',     {type:'gather', skill:'salvaging', lvl:8,  xp:16,  time:3.0, name:'Conduit Run',          icon:'🧵', zones:['rustflats'], outputs:{conduit_coil:1}, flavor:'Strip superconductor from buried cable trunks.'});
   A('sv_servo',    {type:'gather', skill:'salvaging', lvl:20, xp:30,  time:3.3, name:'Loader Graveyard',     icon:'🦾', zones:['rustflats'], outputs:{servo_parts:1}, flavor:'Harvest actuators from dead cargo loaders.'});
-  A('sv_hullweave',{type:'gather', skill:'salvaging', lvl:35, xp:50,  time:3.7, name:'Warship Ribcage',      icon:'🕸', zones:['rustflats'], outputs:{hullweave_mesh:1}, flavor:'Cut mesh from a split military frigate.'});
-  A('sv_fusion',   {type:'gather', skill:'salvaging', lvl:50, xp:75,  time:4.2, name:'Reactor Spill',        icon:'🔋', zones:['kelvin'], outputs:{fusion_cell:1}, flavor:'Fish intact cells out of a frozen reactor breach.'});
+  A('sv_hullweave',{type:'gather', skill:'salvaging', lvl:35, xp:50,  time:3.7, name:'Warship Ribcage',      icon:'🕸', zones:['rustflats','ashvale','crown'], outputs:{hullweave_mesh:1}, flavor:'Cut mesh from a split military frigate.'});
+  A('sv_fusion',   {type:'gather', skill:'salvaging', lvl:50, xp:75,  time:4.2, name:'Reactor Spill',        icon:'🔋', zones:['kelvin','ashvale','crown'], outputs:{fusion_cell:1}, flavor:'Fish intact cells out of a frozen reactor breach.'});
   A('sv_relic',    {type:'gather', skill:'salvaging', lvl:70, xp:115, time:4.8, name:'Pre-Shatter Stacks',   icon:'🧿', zones:['undervault'], outputs:{relic_circuitry:1}, flavor:'Desolder relic boards from the old world\'s racks.'});
   A('sv_shipbreak',{type:'gather', skill:'salvaging', lvl:60, xp:92,  time:4.4, name:'Drowned Freighter',    icon:'🩸', zones:['cinder'], outputs:{brinemetal_plate:1}, flavor:'Cut brinemetal off the hulk the Sound swallowed.'});
   // -- extraction
   A('ex_ferrox',   {type:'gather', skill:'extraction', lvl:1,  xp:12,  time:3.0, name:'Ferrox Outcrop',      icon:'🪨', zones:['rustflats'], outputs:{ferrox_ore:1}, flavor:'Impact-exposed ore, soft enough for a fresh drill.'});
   A('ex_cryotite', {type:'gather', skill:'extraction', lvl:12, xp:22,  time:3.2, name:'Cryotite Pocket',     icon:'🧊', zones:['rustflats','kelvin'], outputs:{cryotite_ore:1}, flavor:'Permafrost pockets hide pale cryotite seams.'});
-  A('ex_vantium',  {type:'gather', skill:'extraction', lvl:28, xp:38,  time:3.6, name:'Vantium Seam',        icon:'🪨', zones:['kelvin'], outputs:{vantium_ore:1}, flavor:'Deep blue veins under the glacier shelf.'});
-  A('ex_aurium',   {type:'gather', skill:'extraction', lvl:45, xp:60,  time:4.0, name:'Aurium Vein',         icon:'🪙', zones:['kelvin'], outputs:{aurium_ore:1}, flavor:'The hum gets louder the deeper you drill.'});
-  A('ex_obsidite', {type:'gather', skill:'extraction', lvl:60, xp:88,  time:4.4, name:'Obsidite Bore',       icon:'⬛', zones:['kelvin'], outputs:{obsidite_ore:1}, flavor:'Light goes in. Nothing comes back out.'});
-  A('ex_neutronite',{type:'gather', skill:'extraction', lvl:78, xp:130, time:5.0, name:'Neutronite Core-Tap', icon:'💠', zones:['kelvin'], outputs:{neutronite_ore:1}, flavor:'The drill screams. Worth it.'});
+  A('ex_vantium',  {type:'gather', skill:'extraction', lvl:28, xp:38,  time:3.6, name:'Vantium Seam',        icon:'🪨', zones:['kelvin','crown'], outputs:{vantium_ore:1}, flavor:'Deep blue veins under the glacier shelf.'});
+  A('ex_aurium',   {type:'gather', skill:'extraction', lvl:45, xp:60,  time:4.0, name:'Aurium Vein',         icon:'🪙', zones:['kelvin','crown'], outputs:{aurium_ore:1}, flavor:'The hum gets louder the deeper you drill.'});
+  A('ex_obsidite', {type:'gather', skill:'extraction', lvl:60, xp:88,  time:4.4, name:'Obsidite Bore',       icon:'⬛', zones:['kelvin','ashvale'], outputs:{obsidite_ore:1}, flavor:'Light goes in. Nothing comes back out.'});
+  A('ex_neutronite',{type:'gather', skill:'extraction', lvl:78, xp:130, time:5.0, name:'Neutronite Core-Tap', icon:'💠', zones:['kelvin','crown'], outputs:{neutronite_ore:1}, flavor:'The drill screams. Worth it.'});
   A('ex_singularity',{type:'gather', skill:'extraction', lvl:90, xp:165, time:5.4, name:'Singularity Scar',   icon:'✨', zones:['undervault'], outputs:{singularity_shard:1}, flavor:'Where the Shatter began, something is still falling inward.'});
   // -- xenobotany
   A('xb_moss',     {type:'gather', skill:'xenobotany', lvl:1,  xp:10,  time:2.8, name:'Lumen Moss Bank',     icon:'🌱', zones:['meridian','glasswood'], outputs:{lumen_moss:1}, flavor:'Glowing moss carpets the shaded wreck-side.'});
   A('xb_spirefruit',{type:'gather', skill:'xenobotany', lvl:10, xp:18,  time:3.0, name:'Spirefruit Grove',    icon:'🍐', zones:['glasswood'], outputs:{spirefruit:1}, flavor:'Fruit chimes softly when ripe.'});
   A('xb_resin',    {type:'gather', skill:'xenobotany', lvl:22, xp:32,  time:3.3, name:'Resin Tapping',       icon:'🫧', zones:['glasswood'], outputs:{glasswood_resin:1}, flavor:'Tap glasswood trunks for crystal sap.'});
-  A('xb_duskpetal',{type:'gather', skill:'xenobotany', lvl:35, xp:50,  time:3.7, name:'Duskpetal Hollow',    icon:'🥀', zones:['glasswood'], outputs:{duskpetal:1}, flavor:'Pick fast — they close at first light.'});
-  A('xb_pyrelace', {type:'gather', skill:'xenobotany', lvl:50, xp:76,  time:4.1, name:'Pyrelace Thicket',    icon:'🌺', zones:['glasswood'], outputs:{pyrelace_fern:1}, flavor:'Wear gloves. The fronds smolder.'});
+  A('xb_duskpetal',{type:'gather', skill:'xenobotany', lvl:35, xp:50,  time:3.7, name:'Duskpetal Hollow',    icon:'🥀', zones:['glasswood','ashvale'], outputs:{duskpetal:1}, flavor:'Pick fast — they close at first light.'});
+  A('xb_pyrelace', {type:'gather', skill:'xenobotany', lvl:50, xp:76,  time:4.1, name:'Pyrelace Thicket',    icon:'🌺', zones:['glasswood','ashvale'], outputs:{pyrelace_fern:1}, flavor:'Wear gloves. The fronds smolder.'});
   A('xb_voidlotus',{type:'gather', skill:'xenobotany', lvl:70, xp:118, time:4.7, name:'Voidlotus Pool',      icon:'🪷', zones:['undervault'], outputs:{voidlotus:1}, flavor:'Blooming in total darkness, fed by nothing.'});
   A('xb_echobloom',{type:'gather', skill:'xenobotany', lvl:85, xp:145, time:5.0, name:'Echo Bloom Terrace',   icon:'🌸', zones:['undervault'], outputs:{echo_bloom:1}, flavor:'Lean close and the flowers whisper in dead voices.'});
   // -- trawling
@@ -284,21 +284,21 @@ var KR_DATA = (function(){
   E('feral_loader',   {name:'Feral Loader',     icon:'🏗', lvl:16, hp:82,  acc:28,  def:24,  hit:8,  spd:3.2, zones:['rustflats'], credits:[15,35],  loot:[{item:'servo_parts', qty:[1,2], chance:0.5},{item:'scrap_plating', qty:[2,4], chance:0.7}]});
   E('glasswing_swarm',{name:'Glasswing Swarm',  icon:'🦋', lvl:13, hp:58,  acc:24,  def:14,  hit:4,  spd:1.8, zones:['glasswood'], credits:[10,24],  loot:[{item:'lumen_moss', qty:[1,3], chance:0.6},{item:'spirefruit', qty:[1,2], chance:0.4}]});
   E('sporeback_strider',{name:'Sporeback Strider',icon:'🦗',lvl:22, hp:112, acc:34,  def:30,  hit:9,  spd:3.0, zones:['glasswood'], credits:[20,45],  loot:[{item:'spirefruit', qty:[1,3], chance:0.5},{item:'glasswood_resin', qty:[1,2], chance:0.5}]});
-  E('verdant_stalker',{name:'Verdant Stalker',  icon:'🐆', lvl:32, hp:165, acc:46,  def:42,  hit:13, spd:2.7, zones:['glasswood'], credits:[35,70],  loot:[{item:'duskpetal', qty:[1,2], chance:0.5},{item:'anomaly_cache', qty:[1,1], chance:0.08}]});
+  E('verdant_stalker',{name:'Verdant Stalker',  icon:'🐆', lvl:32, hp:165, acc:46,  def:42,  hit:13, spd:2.7, zones:['glasswood','ashvale'], credits:[35,70],  loot:[{item:'duskpetal', qty:[1,2], chance:0.5},{item:'anomaly_cache', qty:[1,1], chance:0.08}]});
   E('brine_lurker',   {name:'Brine Lurker',     icon:'🦀', lvl:30, hp:150, acc:44,  def:38,  hit:12, spd:2.9, zones:['cinder'], credits:[30,60],  loot:[{item:'razorjaw', qty:[1,2], chance:0.55},{item:'pulse_eel', qty:[1,1], chance:0.3}]});
   E('tidal_husk',     {name:'Tidal Husk',       icon:'🧟', lvl:42, hp:225, acc:58,  def:54,  hit:16, spd:3.1, zones:['cinder'], credits:[50,100], loot:[{item:'mirrorscale', qty:[1,1], chance:0.3},{item:'fusion_cell', qty:[1,1], chance:0.12},{item:'anomaly_cache', qty:[1,1], chance:0.08}]});
-  E('cryo_wraith',    {name:'Cryo Wraith',      icon:'👻', lvl:50, hp:285, acc:70,  def:62,  hit:19, spd:2.8, zones:['kelvin'], credits:[60,120], loot:[{item:'cryotite_ore', qty:[1,3], chance:0.6},{item:'vantium_ore', qty:[1,2], chance:0.4}]});
-  E('borehole_horror',{name:'Borehole Horror',  icon:'🪱', lvl:62, hp:390, acc:86,  def:78,  hit:24, spd:3.3, aggro:true, zones:['kelvin'], credits:[90,170], loot:[{item:'obsidite_ore', qty:[1,2], chance:0.45},{item:'fusion_cell', qty:[1,1], chance:0.25}]});
+  E('cryo_wraith',    {name:'Cryo Wraith',      icon:'👻', lvl:50, hp:285, acc:70,  def:62,  hit:19, spd:2.8, zones:['kelvin','crown'], credits:[60,120], loot:[{item:'cryotite_ore', qty:[1,3], chance:0.6},{item:'vantium_ore', qty:[1,2], chance:0.4}]});
+  E('borehole_horror',{name:'Borehole Horror',  icon:'🪱', lvl:62, hp:390, acc:86,  def:78,  hit:24, spd:3.3, aggro:true, zones:['kelvin','crown'], credits:[90,170], loot:[{item:'obsidite_ore', qty:[1,2], chance:0.45},{item:'fusion_cell', qty:[1,1], chance:0.25}]});
   E('vault_sentinel', {name:'Vault Sentinel',   icon:'🤖', lvl:70, hp:470, acc:98,  def:88,  hit:27, spd:3.0, aggro:true, zones:['undervault'], credits:[110,220], loot:[{item:'relic_circuitry', qty:[1,2], chance:0.35},{item:'vault_sigil', qty:[1,1], chance:0.25}]});
   E('hollow_custodian',{name:'Hollow Custodian', icon:'🗿', lvl:80, hp:590, acc:112, def:100, hit:32, spd:3.2, aggro:true, zones:['undervault'], credits:[150,300], loot:[{item:'vault_sigil', qty:[1,1], chance:0.35},{item:'neutronite_ore', qty:[1,2], chance:0.4},{item:'anomaly_cache', qty:[1,1], chance:0.1}]});
-  E('rust_titan',     {name:'Rust Titan',       icon:'🏗', lvl:56, hp:330, acc:76,  def:70,  hit:21, spd:3.4, zones:['rustflats'], credits:[70,140],  loot:[{item:'servo_parts', qty:[2,4], chance:0.6},{item:'hullweave_mesh', qty:[1,2], chance:0.4},{item:'anomaly_cache', qty:[1,1], chance:0.1}]});
+  E('rust_titan',     {name:'Rust Titan',       icon:'🏗', lvl:56, hp:330, acc:76,  def:70,  hit:21, spd:3.4, zones:['rustflats','ashvale'], credits:[70,140],  loot:[{item:'servo_parts', qty:[2,4], chance:0.6},{item:'hullweave_mesh', qty:[1,2], chance:0.4},{item:'anomaly_cache', qty:[1,1], chance:0.1}]});
   E('echo_shade',     {name:'Echo Shade',       icon:'👤', lvl:75, hp:520, acc:104, def:92,  hit:29, spd:2.6, aggro:true, zones:['undervault'], credits:[130,260], loot:[{item:'echo_bloom', qty:[1,2], chance:0.4},{item:'relic_circuitry', qty:[1,1], chance:0.2},{item:'vault_sigil', qty:[1,1], chance:0.15},{item:'star_seed', qty:[1,1], chance:0.18}]});
-  E('shard_golem',    {name:'Shard Golem',      icon:'🧊', lvl:85, hp:660, acc:120, def:108, hit:34, spd:3.4, aggro:true, zones:['kelvin'], credits:[170,340], loot:[{item:'neutronite_ore', qty:[1,2], chance:0.5},{item:'obsidite_ore', qty:[1,2], chance:0.5},{item:'anomaly_cache', qty:[1,1], chance:0.12}]});
+  E('shard_golem',    {name:'Shard Golem',      icon:'🧊', lvl:85, hp:660, acc:120, def:108, hit:34, spd:3.4, aggro:true, zones:['kelvin','crown'], credits:[170,340], loot:[{item:'neutronite_ore', qty:[1,2], chance:0.5},{item:'obsidite_ore', qty:[1,2], chance:0.5},{item:'anomaly_cache', qty:[1,1], chance:0.12}]});
   E('warden_7',       {name:'WARDEN-7',         icon:'👁', lvl:90, hp:880, acc:130, def:115, hit:38, spd:3.0, aggro:true, zones:['undervault'], boss:true, credits:[800,1500], loot:[{item:'neutronite_bar', qty:[2,4], chance:1},{item:'anomaly_cache', qty:[1,2], chance:0.6},{item:'relic_circuitry', qty:[2,3], chance:0.8}]});
 
   /* ---------------- zones ---------------- */
   const ZONES = {};
-  const ZONE_ORDER = ['meridian','rustflats','glasswood','haven','cinder','kelvin','undervault'];
+  const ZONE_ORDER = ['meridian','rustflats','ashvale','glasswood','haven','crown','cinder','kelvin','undervault'];
   function Z(id, def){ ZONES[id] = Object.assign({id}, def); }
   Z('meridian',  {name:'Wreck of the Meridian', icon:'🛶', always:true, facilities:['fabricator','galley','bench'],
     desc:'Your crash site and camp — half a hauler buried in dust. The galley still works. So does hope.'});
@@ -314,6 +314,10 @@ var KR_DATA = (function(){
     desc:'Glacier-buried mining works. The cold preserved the ore — and other things.'});
   Z('undervault',{name:'The Undervault', icon:'🕳', pilot:45, quest:'q6',
     desc:'A sealed pre-Shatter archive beneath the shattered moon. Its custodians never got the memo.'});
+  Z('ashvale',   {name:'Ashvale', icon:'🌋', pilot:16,
+    desc:'A grey valley where burning wreckage fell for a decade. Pyrelace took root in the cinders — so did things with teeth.'});
+  Z('crown',     {name:'The Crown', icon:'🏔', pilot:35,
+    desc:'The wind-scoured summit north of Haven. Rich veins, thin air, and nothing soft for a hundred kilometers.'});
 
   /* ---------------- missions ---------------- */
   const QUESTS = {};
@@ -618,6 +622,17 @@ var KR_DATA = (function(){
       {say:['I trade with Hollow folk. Help Iva with her strider problem and we\'ll talk proper.',
         'No, the greenhouse isn\'t for sale. Yes, everyone asks.']}]},
     // —— Borehole 9, the mining outpost ——
+    // —— the new frontiers ——
+    {id:'kade', name:'Sister Kade', role:'Ash-gardener of the vale', icon:'🌋', zone:'ashvale', dx:-6, dz:4, roam:16, suit:0x5a4038, visor:0xffb37a, dlg:[
+      {when:'claimed:q10', say:['Brinemoor sent me lantern oil after the festival. First gift the vale\'s had in twenty years. The pyrelace bloomed double that week — I keep the records, I would know.']},
+      {say:['Everything here burned twice — once falling, once landing. And still the pyrelace came back. Be more like pyrelace, drifter.',
+        'The husks wander up from the Sound when the ash-wind blows south. They don\'t like the heat. They come anyway. There\'s a sermon in that.',
+        'I garden the hot rows at dawn and count the titans at dusk. Retirement is what you make it.']}]},
+    {id:'orin', name:'Orin Vex', role:'Surveyor — yes, that Vex\'s brother', icon:'🏔', zone:'crown', dx:8, dz:2, roam:14, suit:0x6a7488, visor:0xd0e8ff, dlg:[
+      {when:'claimed:q11', say:['My brother undersold you, Reachwarden — first time in his life he\'s undersold anything. The Crown\'s veins are yours to work; you\'ve earned thinner air than this.']},
+      {say:['My brother sells rations at the bottom of the hill. I map aurium at the top. We are both exactly where we belong.',
+        'The wind up here has worn down everything but the ore and my opinion of the view. Both are excellent.',
+        'Wraiths drift up from the Deep some nights, chasing the veins. The golems just... grow here now. I survey around them. Carefully.']}]},
     {id:'goss', name:'Vey Goss', role:'Prospector of Borehole 9', icon:'⛏', zone:'kelvin', dx:11, dz:9, roam:12, suit:0x8aa4c8, visor:0xfff0c0, dlg:[
       {when:'claimed:q4', say:['Crowe closed his survey thanks to you, which means MY claims are legal now. First aurium vein\'s named after my mother. Second one\'s named after you.']},
       {say:['Cold keeps the ore honest and the company scarce. Paradise, if you dress for it.',
@@ -684,6 +699,10 @@ var KR_DATA = (function(){
       desc:'The junk stream parts — Piloting XP +50% at the hangar.'},
     {id:'ghostnet',name:'Ghost Frequencies', zone:'rustflats', icon:'🔓', mult:1.5, skills:['hacking'],
       desc:'Dead networks wake across the flats — Hacking XP +50% there.'},
+    {id:'ashbloom',name:'Ash Bloom',         zone:'ashvale',   icon:'🌋', mult:1.5, skills:['xenobotany','extraction'],
+      desc:'The vale flowers out of the cinders — Xenobotany & Extraction XP +50% there.'},
+    {id:'thinair', name:'Still Air',         zone:'crown',     icon:'🏔', mult:1.5, skills:['extraction','salvaging'],
+      desc:'The summit wind dies for once — Extraction & Salvaging XP +50% on the Crown.'},
   ];
 
   /* ---------------- misc ---------------- */
@@ -708,6 +727,8 @@ var KR_DATA = (function(){
       {zone:'cinder',    x:70,   z:150,  r:60, color:0x3a4046, decor:'shore'},
       {zone:'kelvin',    x:-120, z:-140, r:60, color:0xb9cdd9, decor:'ice'},
       {zone:'undervault',x:120,  z:-150, r:55, color:0x453e54, decor:'ruins'},
+      {zone:'ashvale',   x:-90,  z:130,  r:52, color:0x4a3c36, decor:'ash'},
+      {zone:'crown',     x:0,    z:-190, r:50, color:0x97a2b2, decor:'summit'},
     ],
     corridors:[
       {a:'meridian', b:'rustflats',  w:13},
@@ -716,6 +737,9 @@ var KR_DATA = (function(){
       {a:'meridian', b:'cinder',     w:12, gate:'cinder'},
       {a:'haven',    b:'kelvin',     w:12, gate:'kelvin'},
       {a:'haven',    b:'undervault', w:12, gate:'undervault'},
+      {a:'rustflats',b:'ashvale',    w:12, gate:'ashvale'},
+      {a:'ashvale',  b:'cinder',     w:12},
+      {a:'haven',    b:'crown',      w:11, gate:'crown'},
     ],
     water:[                                  // carved pools; global water plane shows in dips
       {x:0,   z:96,  r:12},                  // coolant lagoon at camp
@@ -791,6 +815,21 @@ var KR_DATA = (function(){
       {action:'xb_echobloom',  zone:'undervault', dx:-36, dz:-6},
       {action:'xb_echobloom',  zone:'undervault', dx:10,  dz:-38},
       {action:'tw_phasefin',   zone:'undervault', dx:6,   dz:14, water:true},
+      // Ashvale — the burning valley (second sources for mid-game flora & deep ore)
+      {action:'xb_pyrelace',   zone:'ashvale', dx:-18, dz:-10},
+      {action:'xb_pyrelace',   zone:'ashvale', dx:12,  dz:-22},
+      {action:'xb_duskpetal',  zone:'ashvale', dx:24,  dz:8},
+      {action:'ex_obsidite',   zone:'ashvale', dx:-26, dz:14},
+      {action:'ex_obsidite',   zone:'ashvale', dx:4,   dz:26},
+      {action:'sv_hullweave',  zone:'ashvale', dx:-8,  dz:-28},
+      {action:'sv_fusion',     zone:'ashvale', dx:30,  dz:-6},
+      // The Crown — the summit veins
+      {action:'ex_aurium',     zone:'crown', dx:-16, dz:-8},
+      {action:'ex_aurium',     zone:'crown', dx:14,  dz:-18},
+      {action:'ex_neutronite', zone:'crown', dx:-4,  dz:-26},
+      {action:'ex_vantium',    zone:'crown', dx:22,  dz:6},
+      {action:'sv_fusion',     zone:'crown', dx:-24, dz:10},
+      {action:'sv_hullweave',  zone:'crown', dx:8,   dz:18},
     ],
     facilities:[
       {f:'fabricator', zone:'meridian', dx:7,  dz:-4},
@@ -820,6 +859,8 @@ var KR_DATA = (function(){
       {zone:'kelvin',    dx:7,   dz:12},
       {zone:'haven',     dx:-6,  dz:6},
       {zone:'haven',     dx:-10, dz:2},
+      {zone:'ashvale',   dx:-2,  dz:10},
+      {zone:'crown',     dx:2,   dz:10},
     ],
     villages:[
       {id:'driftrock', name:'Driftrock',      zone:'rustflats',  dx:-18, dz:-34, kind:'shanty'},
@@ -869,6 +910,17 @@ var KR_DATA = (function(){
       {e:'echo_shade',      zone:'undervault', dx:38,  dz:16},
       {e:'shard_golem',     zone:'kelvin', dx:22,  dz:-42},
       {e:'shard_golem',     zone:'kelvin', dx:-46, dz:6},
+      // Ashvale packs
+      {e:'verdant_stalker', zone:'ashvale', dx:-20, dz:-18},
+      {e:'verdant_stalker', zone:'ashvale', dx:18,  dz:14},
+      {e:'tidal_husk',      zone:'ashvale', dx:-30, dz:8},
+      {e:'tidal_husk',      zone:'ashvale', dx:8,   dz:-30},
+      {e:'rust_titan',      zone:'ashvale', dx:26,  dz:-20},
+      // Crown predators
+      {e:'cryo_wraith',     zone:'crown', dx:-18, dz:12},
+      {e:'cryo_wraith',     zone:'crown', dx:20,  dz:-10},
+      {e:'borehole_horror', zone:'crown', dx:-26, dz:-16},
+      {e:'shard_golem',     zone:'crown', dx:10,  dz:-30},
     ],
   };
 
