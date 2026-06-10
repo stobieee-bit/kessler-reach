@@ -104,6 +104,40 @@ Object.values(D.ACTIONS).filter(a=>(a.type==='gather'||a.type==='hack') && !a.qu
   checkSpot('board', D.WORLD.board.zone, D.WORLD.board.dx, D.WORLD.board.dz, false);
   (D.WORLD.plots||[]).forEach((p,i)=>checkSpot('plot#'+i+' @'+p.zone, p.zone, p.dx, p.dz, false));
 }
+// ---- quest completability: every objective must have an obtainable path ----
+D.QUEST_ORDER.forEach(qid=>{
+  const q=D.QUESTS[qid];
+  q.objectives.forEach(o=>{
+    if(o.type==='kill' && !D.WORLD.enemies.some(e=>e.e===o.enemy))
+      bad.push(`quest ${qid}: kill target ${o.enemy} has no world spawn`);
+    if(o.type==='hack' && !D.WORLD.nodes.some(n=>n.action===o.action))
+      bad.push(`quest ${qid}: hack node ${o.action} not placed in world`);
+    if(o.type==='craft'){
+      const a=Object.values(D.ACTIONS).find(a=>a.type==='craft'&&a.outputs&&a.outputs[o.item]);
+      if(!a) bad.push(`quest ${qid}: craft item ${o.item} has no recipe`);
+      else{
+        if(a.questOnly && a.questOnly!==qid) bad.push(`quest ${qid}: recipe for ${o.item} is locked behind ${a.questOnly}`);
+        if(!D.WORLD.facilities.some(f=>f.f===a.facility)) bad.push(`quest ${qid}: no ${a.facility} placed anywhere in the world`);
+        // and the recipe's inputs must themselves be obtainable
+        Object.keys(a.inputs||{}).forEach(inp=>{
+          const ok = Object.values(D.ACTIONS).some(x=>x.outputs&&x.outputs[inp]&&!x.questOnly)
+            || Object.values(D.ENEMIES).some(E=>(E.loot||[]).some(L=>L.item===inp))
+            || Object.values(D.SHOPS).some(v=>v.stock.some(s=>s.item===inp))
+            || Object.values(D.SEEDS).some(s=>s.crop===inp);
+          if(!ok) bad.push(`quest ${qid}: recipe input ${inp} for ${o.item} is unobtainable`);
+        });
+      }
+    }
+    if(o.type==='collect'){
+      const id=o.item;
+      const ok = Object.values(D.ACTIONS).some(a=>a.outputs&&a.outputs[id]&&(!a.questOnly||a.questOnly===qid))
+        || Object.values(D.ENEMIES).some(E=>(E.loot||[]).some(L=>L.item===id))
+        || Object.values(D.SEEDS).some(s=>s.crop===id)
+        || Object.values(D.SHOPS).some(v=>v.stock.some(s=>s.item===id));
+      if(!ok) bad.push(`quest ${qid}: collect item ${id} has NO obtainable source`);
+    }
+  });
+});
 // hydroponics integrity
 Object.entries(D.SEEDS).forEach(([id,sd])=>{
   if(!D.ITEMS[id]) bad.push('seed item missing: '+id);

@@ -836,6 +836,52 @@ function buyOffer(vendorId, idx, qty){
 }
 
 /* ================= missions ================= */
+/* ---- objective hints: derive where/how from the data itself ---- */
+function placeName(zone){
+  const v = (D.WORLD.villages||[]).find(v=>v.zone===zone);
+  return v ? v.name : D.ZONES[zone].name;
+}
+function itemSources(id){
+  const out = [];
+  for(const a of Object.values(D.ACTIONS)){
+    if(!a.outputs || !a.outputs[id]) continue;
+    if(a.type==='gather'){
+      out.push({pri:0, text:`gather at ${a.name} (${skillDef(a.skill).name} ${a.lvl}) — ${a.zones.map(z=>D.ZONES[z].name).join(', ')}`});
+    }else if(a.type==='craft'){
+      const places = [...new Set(D.WORLD.facilities.filter(f=>f.f===a.facility).map(f=>placeName(f.zone)))];
+      out.push({pri:1, text:`craft at any ${D.FACILITY_NAMES[a.facility]} (${skillDef(a.skill).name} ${a.lvl}) — ${places.join(', ')}${a.questOnly?'. The recipe appears there while this mission is active':''}`});
+    }
+  }
+  const droppers = Object.values(D.ENEMIES).filter(E=>(E.loot||[]).some(L=>L.item===id));
+  if(droppers.length){
+    const zones = [...new Set(droppers.flatMap(E=>E.zones))].map(z=>D.ZONES[z].name);
+    out.push({pri:2, text:`drops from ${droppers.map(E=>E.name).join(', ')} — ${zones.join(', ')}`});
+  }
+  for(const [sid,sd] of Object.entries(D.SEEDS)) if(sd.crop===id)
+    out.push({pri:3, text:`grow from ${D.ITEMS[sid].name} in any hydroponic bed (${sd.mins} min)`});
+  for(const v of Object.values(D.SHOPS)) if(v.stock.some(s=>s.item===id))
+    out.push({pri:4, text:`sold by ${v.name}`});
+  return out.sort((a,b)=>a.pri-b.pri);
+}
+function objectiveHints(o){
+  if(o.type==='craft'){
+    const all = itemSources(o.item);
+    const craft = all.filter(s=>s.pri===1);
+    return (craft.length?craft:all).slice(0,2).map(s=>s.text);
+  }
+  if(o.type==='collect') return itemSources(o.item).slice(0,2).map(s=>s.text);
+  if(o.type==='kill'){
+    const E = D.ENEMIES[o.enemy];
+    return [`found in ${E.zones.map(z=>D.ZONES[z].name).join(', ')}`];
+  }
+  if(o.type==='hack'){
+    const a = D.ACTIONS[o.action];
+    return [`a ${a.name} terminal — ${a.zones.map(z=>D.ZONES[z].name).join(', ')} (Hacking ${a.lvl})`];
+  }
+  if(o.type==='run') return ['fly any contract from the hangar pad at Haven Station'];
+  return [];
+}
+
 function questReqsMet(q){
   if(q.reqs.quests) for(const id of q.reqs.quests) if(!state.quests[id] || !state.quests[id].claimed) return false;
   if(q.reqs.skills) for(const k in q.reqs.skills) if(skillLevel(k) < q.reqs.skills[k]) return false;
@@ -1573,7 +1619,8 @@ function missionsHtml(){
           if(o.type==='hack') label = `Breach ${D.ACTIONS[o.action].name}`;
           if(o.type==='run') label = `Complete piloting runs`;
           if(o.type==='level') label = `Reach ${skillDef(o.skill).name} level`;
-          return `<div class="obj ${done?'done':''}"><span>${done?'✔':'◌'}</span><span>${label}</span><span class="ob-prog">${fmt(p)}/${o.qty}</span></div>`;
+          const hints = done ? '' : objectiveHints(o).map(h=>`<div class="obj-hint">↳ ${h}</div>`).join('');
+          return `<div class="obj ${done?'done':''}"><span>${done?'✔':'◌'}</span><span>${label}</span><span class="ob-prog">${fmt(p)}/${o.qty}</span></div>${hints}`;
         }).join('');
       }
       const r=q.rewards||{}, rb=[];

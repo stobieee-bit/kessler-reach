@@ -233,6 +233,7 @@ input,textarea,select{font:inherit;}
 .obj{display:flex; gap:7px; font-size:12px; padding:2.5px 0; color:var(--txt);}
 .obj .ob-prog{margin-left:auto; color:var(--dim); font-variant-numeric:tabular-nums;}
 .obj.done{color:var(--xp);} .obj.done .ob-prog{color:var(--xp);}
+.obj-hint{font-size:10.5px; color:var(--faint); padding:0 0 4px 19px; line-height:1.4;}
 .q-rewards{margin-top:7px; font-size:11.5px; color:var(--gold);}
 .q-btns{margin-top:8px; display:flex; gap:6px;}
 
