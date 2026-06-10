@@ -1003,9 +1003,9 @@ function nearestAlive(eid, maxD){
 /* ---------------- per-frame update ---------------- */
 function updatePlayer(dt){
   const p=player;
-  // WASD
+  // WASD — W walks away from the camera (screen-forward), S toward it
   let kx=0,kz=0;
-  if(keys.w)kz-=1; if(keys.s)kz+=1; if(keys.a)kx-=1; if(keys.d)kx+=1;
+  if(keys.w)kz+=1; if(keys.s)kz-=1; if(keys.a)kx-=1; if(keys.d)kx+=1;
   if(kx||kz){
     const sy=Math.sin(cam.yaw), cy=Math.cos(cam.yaw);
     const dx=(kx*cy - kz*sy), dz=(-kx*sy - kz*cy);
