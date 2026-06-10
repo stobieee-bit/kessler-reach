@@ -46,7 +46,8 @@ Use **⚙ Settings** to export/import your save as a string.
 | **13 named NPCs** | Roaming, authored characters — quartermasters, chemists, archivists, village elders, scavver kids — with quest-state-aware dialogue |
 | **98 items / 16 hostiles** | 7-tier gathering & gear chains; Scrap Hounds to Rust Titans, Echo Shades, Shard Golems and the boss WARDEN-7 |
 | **11 missions** | Survival opening → village arcs (Driftrock Debt, Tides of Brinemoor) → the Undervault campaign → a post-boss revelation arc about what the Shatter really was, ending at the title "Reachwarden" |
-| **3 combat styles** | Kinetics / Marksmanship / Psionics weapons; Resilience trains as you get hit |
+| **3 combat styles + specials** | Kinetics / Marksmanship / Psionics weapons; adrenaline builds in combat and unleashes style specials — Graviton Slam, Storm Volley, Stasis Lock (Space) |
+| **Installable & offline** | Full PWA: add it to your desktop or home screen, keep playing without a connection after the first visit |
 | **A living world** | 8 rotating regional events (meteor showers, lumen blooms, echo tides…) boost skills where they land; ★ Alpha elites roll on every respawn with triple loot; the market drifts daily by category |
 | **Endless goals** | Work orders for every trade (cull / supply / fabricate, rerolled on claim), total-level milestones with account-wide perks, masterwork crafting crits, **22 feats to earn** |
 | **A real product** | Title screen with Continue/New, loading splash, HUD local-scan minimap + quest tracker, gear comparison tooltips, generative score + per-action SFX with a 3-channel volume mixer, help & credits screen, keyboard shortcuts (1–5, H), touch & pinch support, rolling save backup |

@@ -10,9 +10,10 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0a0f18">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,6 90,28 90,72 50,94 10,72 10,28' fill='%230a0f18' stroke='%233fe0c8' stroke-width='9'/></svg>">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
 <title>KESSLER REACH — frontier skilling RPG</title>
-<link rel="stylesheet" href="css/style.css?v=201">
+<link rel="stylesheet" href="css/style.css?v=210">
 </head>
 <body>
 <div id="boot"><div class="boot-t">KESSLER <span>REACH</span></div><div class="boot-sub">waking the Reach…</div></div>
@@ -47,6 +48,7 @@
       <div id="hint"></div>
       <canvas id="hudmap" width="148" height="148" title="Local scan — click for system map"></canvas>
       <div id="tracker"></div>
+      <button id="specBtn" title="Special attack (Space) — charges as you fight"><i></i><span id="specLabel">SPECIAL</span><b id="specPct">0%</b></button>
       <div id="floatPanel" class="hidden"></div>
     </div>
   </main>
@@ -63,8 +65,8 @@
 <div id="modalRoot"></div>
 
 <script src="lib/three.min.js"></script>
-<script src="js/data.js?v=201"></script>
-<script src="js/world.js?v=201"></script>
-<script src="js/game.js?v=201"></script>
+<script src="js/data.js?v=210"></script>
+<script src="js/world.js?v=210"></script>
+<script src="js/game.js?v=210"></script>
 </body>
 </html>

@@ -131,7 +131,7 @@ function freshState(callsign){
     skills, cargo:{}, gear:{weapon:null, suit:null, visor:null, multitool:null, gadget:null},
     zone:'meridian', pos:{x:D.WORLD.camp.x, z:D.WORLD.camp.z},
     unlockedZones:[], seenZones:[], visited:[], contracts:[], unlockedShops:[],
-    event:null, nextEventAt:0, milestonesHit:[], hints:[],
+    event:null, nextEventAt:0, milestonesHit:[], hints:[], adren:0,
     action:null, combat:null,
     quests:{}, buffs:[], notifiedQ:[],
     settings:{autoEat:true, eatAt:0.45, sound:true, music:true, vol:{master:0.8, sfx:1, music:0.7}},
@@ -529,6 +529,54 @@ function tickAction(dt){
   }
 }
 
+/* ================= special attacks ================= */
+const SPECIALS = {
+  kinetics:     {name:'Graviton Slam', desc:'One crushing blow at 220% damage that cannot miss.'},
+  marksmanship: {name:'Storm Volley',  desc:'Three instant shots at 90% damage each.'},
+  psionics:     {name:'Stasis Lock',   desc:'A guaranteed hit that locks the target\'s weapons for 5s.'},
+};
+function gainAdren(n){
+  if(!state) return;
+  state.adren = clamp((state.adren||0) + n, 0, 100);
+}
+function useSpecial(){
+  if(!state || (state.adren||0) < 100 || !state.combat) return;
+  const ent = KRWorld.byUid(state.combat.ent);
+  if(!ent || ent.state==='dead') return;
+  const E = D.ENEMIES[state.combat.eid];
+  const w = weapon();
+  const d = KRWorld.distTo(ent);
+  if(d > styleRange(w.style)+1){ toast('<b>Too far</b> for a special strike.','bad'); return; }
+  state.adren = 0;
+  const sp = SPECIALS[w.style];
+  blip(330,.08,'sawtooth',.05); blip(660,.12,'sawtooth',.05,.08);
+  if(w.style==='kinetics'){
+    const dmg = Math.round(pMaxHit()*2.2);
+    ent.hp -= dmg;
+    KRWorld.attackFx('player', ent, 'kinetics');
+    KRWorld.splat(ent, dmg+'!', 'crit');
+    gainXp('kinetics', dmg*2.2); gainXp('vitality', dmg*0.9);
+  }else if(w.style==='marksmanship'){
+    let total=0;
+    for(let i=0;i<3;i++){
+      KRWorld.attackFx('player', ent, 'marksmanship');
+      const hitChance = clamp(pAcc()/(pAcc()+E.def*1.5+8), .05, .95);
+      if(Math.random()<hitChance){ const dmg=Math.round(rint(1,pMaxHit())*0.9); total+=dmg; ent.hp-=dmg; }
+    }
+    KRWorld.splat(ent, total>0?total+'!':'miss', total>0?'crit':'miss');
+    if(total>0){ gainXp('marksmanship', total*2.2); gainXp('vitality', total*0.9); }
+  }else{
+    const dmg = rint(Math.round(pMaxHit()*0.5), pMaxHit());
+    ent.hp -= dmg;
+    state.combat.eT += 5;                      // weapons locked
+    KRWorld.attackFx('player', ent, 'psionics');
+    KRWorld.splat(ent, dmg+' ⛓', 'crit');
+    gainXp('psionics', dmg*2.2); gainXp('vitality', dmg*0.9);
+  }
+  addLog(`${sp.name}!`,'good');
+  if(ent.hp<=0) onKillEntity(ent, E);
+}
+
 /* ================= combat (world entities) ================= */
 function hintOnce(id, html){
   if(!state.hints) state.hints=[];
@@ -600,6 +648,7 @@ function tickCombat(dt){
   const c = state.combat;
   if(!c) return;
   if(document.hidden) return;            // combat freezes while the tab is hidden — no off-screen deaths
+  if($('.modal-back')) return;           // …and while menus are open — no dying in the settings screen
   const ent = KRWorld.byUid(c.ent);
   if(!ent || ent.state==='dead'){ disengage(); return; }
   const E = D.ENEMIES[c.eid];
@@ -621,6 +670,7 @@ function tickCombat(dt){
         blip(420,.05,'square',.018);
         gainXp(w.style, dmg*2.2);
         gainXp('vitality', dmg*0.9);
+        gainAdren(4);
         if(ent.hp<=0){ onKillEntity(ent, E); return; }
       }else KRWorld.splat(ent, 'miss', 'miss');
     }
@@ -638,6 +688,7 @@ function tickCombat(dt){
         const dmg = rint(1, Math.round(E.hit * (ent.elite?1.4:1)));
         KRWorld.splat('player', dmg, 'hite');
         gainXp('resilience', dmg*1.3);
+        gainAdren(3);
         applyDamage(dmg, `${E.name} tore through your suit`);
       }else KRWorld.splat('player', 'miss', 'miss');
     }
@@ -1473,6 +1524,15 @@ function updateDynamic(){
     const bar = $('#bar-'+a.id);
     if(bar) bar.style.width = clamp(state.action.prog/actionDuration(a)*100,0,100)+'%';
   }
+  const sb = $('#specBtn');
+  if(sb){
+    const a = Math.round(state.adren||0);
+    const ready = a>=100;
+    sb.classList.toggle('ready', ready);
+    sb.querySelector('i').style.width = a+'%';
+    $('#specPct').textContent = a+'%';
+    $('#specLabel').textContent = (SPECIALS[weapon().style]||{}).name ? SPECIALS[weapon().style].name.toUpperCase() : 'SPECIAL';
+  }
 }
 
 /* ================= modals ================= */
@@ -1484,7 +1544,7 @@ function showTitle(awayReport){
   const hasSave = !!state;
   showModal(`
     <div class="intro-title"><span class="ka">KESSLER</span> REACH</div>
-    <div class="intro-sub">a frontier skilling RPG · v2.0</div>
+    <div class="intro-sub">a frontier skilling RPG · v2.1</div>
     <p style="text-align:center; color:var(--dim);">${hasSave
       ? `Welcome back, <b style="color:var(--acc)">${esc(state.callsign)}</b> — the Reach kept your place.`
       : 'A shattered sky. A crashed hauler. Fifteen ways to become a legend.'}</p>
@@ -1514,6 +1574,7 @@ function showHelp(backFn){
     <div class="guide-row"><span class="g-lvl">Click</span><span style="flex:1">Walk there · use whatever you clicked (nodes, machines, people, hostiles)</span></div>
     <div class="guide-row"><span class="g-lvl">WASD</span><span style="flex:1">Move directly (camera-relative)</span></div>
     <div class="guide-row"><span class="g-lvl">Drag</span><span style="flex:1">Orbit the camera (arrow keys too · pinch or scroll to zoom)</span></div>
+    <div class="guide-row"><span class="g-lvl">Space</span><span style="flex:1">Special attack at full adrenaline — Slam (kinetics) · Volley (marksman) · Stasis (psionics)</span></div>
     <div class="guide-row"><span class="g-lvl">1–5</span><span style="flex:1">Side panels: Cargo · Gear · Missions · Map · Feats</span></div>
     <div class="guide-row"><span class="g-lvl">H / Esc</span><span style="flex:1">This screen / close panels</span></div>
     <p style="color:var(--acc); margin-top:10px;">The loop</p>
@@ -1562,7 +1623,7 @@ function showAway(report){
 function showSettings(){
   const s = state.settings;
   const playH = (Date.now()-state.created)/3600000;
-  showModal(`<h2>Settings & Save <span style="color:var(--faint); font-size:11px; letter-spacing:1px;">v2.0</span></h2>
+  showModal(`<h2>Settings & Save <span style="color:var(--faint); font-size:11px; letter-spacing:1px;">v2.1</span></h2>
     <div class="setting-row"><span class="grow">Callsign</span><input type="text" id="setName" maxlength="16" style="width:160px" value="${esc(state.callsign)}"></div>
     <div class="setting-row"><span class="grow">Auto-eat in combat</span><input type="checkbox" id="setAutoEat" ${s.autoEat?'checked':''}></div>
     <div class="setting-row"><span class="grow">Auto-eat below</span>
@@ -1714,7 +1775,9 @@ document.addEventListener('keydown', e=>{
   const tabKeys = {'1':'cargo','2':'gear','3':'missions','4':'map','5':'feats'};
   if(tabKeys[e.key]){ ui.sideTab=tabKeys[e.key]; renderSide(); }
   else if(e.key==='h'||e.key==='H'){ showHelp(); }
+  else if(e.key===' '){ useSpecial(); e.preventDefault(); }
 });
+$('#specBtn').addEventListener('click', ()=>useSpecial());
 $('#btnSettings').addEventListener('click', ()=>{ if(state) showSettings(); });
 $('#btnHelp').addEventListener('click', ()=>showHelp());
 $('#hudmap').addEventListener('click', ()=>{ if(state){ ui.sideTab='map'; renderSide(); } });
@@ -1831,6 +1894,10 @@ function boot(){
   }
   const bootEl = document.getElementById('boot');
   if(bootEl){ bootEl.classList.add('off'); setTimeout(()=>bootEl.remove(), 700); }
+  // offline/installable: register the service worker (https or localhost only)
+  if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1')){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
   window.KR = {get state(){return state;}, gainXp, addItem, addCredits, save, D, startQuest, claimQuest, engage, isZoneUnlocked,
     interact:(uid)=>worldApi.interact(KRWorld.byUid(uid)),
     _event(id){ const ev=D.EVENTS.find(e=>e.id===id); if(ev){ state.event={id, until:Date.now()+150000}; toast(`<b>${ev.icon} ${ev.name}</b>`,'quest',ev.desc); } },

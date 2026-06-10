@@ -1,0 +1,12 @@
+{
+  "name": "Kessler Reach — frontier skilling RPG",
+  "short_name": "Kessler Reach",
+  "description": "A free browser RPG in a 3D open world: 15 skills, 13 missions, 5 settlements, a living frontier.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#05070c",
+  "theme_color": "#0a0f18",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
