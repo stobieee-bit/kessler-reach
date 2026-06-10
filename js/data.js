@@ -749,8 +749,8 @@ var KR_DATA = (function(){
     // gather / hack nodes — interactive world objects bound to ACTIONS
     nodes:[
       // Wreck of the Meridian
-      {action:'sv_scrap',   zone:'meridian', dx:-15, dz:-8},
-      {action:'sv_scrap',   zone:'meridian', dx:14,  dz:16},
+      {action:'sv_scrap',   zone:'meridian', dx:-15, dz:-8},      // beside the hull
+      {action:'sv_scrap',   zone:'meridian', dx:14,  dz:14},      // on the crash furrow the Meridian plowed
       {action:'xb_moss',    zone:'meridian', dx:22,  dz:-12},
       {action:'xb_moss',    zone:'meridian', dx:-24, dz:12},
       {action:'tw_skimmer', zone:'meridian', dx:-3,  dz:33, water:true},
@@ -766,7 +766,7 @@ var KR_DATA = (function(){
       {action:'ex_ferrox',    zone:'rustflats', dx:18,  dz:36},
       {action:'ex_ferrox',    zone:'rustflats', dx:-28, dz:32},
       {action:'ex_cryotite',  zone:'rustflats', dx:-40, dz:-22},
-      {action:'hk_lockbox',   zone:'rustflats', dx:2,   dz:8},
+      {action:'hk_lockbox',   zone:'rustflats', dx:-10, dz:-24},   // a scavver cache on Driftrock's doorstep
       // Glasswood Verge
       {action:'xb_moss',       zone:'glasswood', dx:-26, dz:18},
       {action:'xb_spirefruit', zone:'glasswood', dx:10,  dz:-14},
@@ -810,8 +810,8 @@ var KR_DATA = (function(){
       // late-game expansion nodes (the freighter lies in the shallows — cut from the shore)
       {action:'sv_shipbreak',  zone:'cinder', dx:5,   dz:11, water:true},
       {action:'sv_shipbreak',  zone:'cinder', dx:-10, dz:26, water:true},
-      {action:'ex_singularity',zone:'undervault', dx:-10, dz:36},
-      {action:'ex_singularity',zone:'undervault', dx:32,  dz:24},
+      {action:'ex_singularity',zone:'undervault', dx:26,  dz:30},   // the Scar is one place,
+      {action:'ex_singularity',zone:'undervault', dx:31,  dz:24},   // two wounds in it
       {action:'xb_echobloom',  zone:'undervault', dx:-36, dz:-6},
       {action:'xb_echobloom',  zone:'undervault', dx:10,  dz:-38},
       {action:'tw_phasefin',   zone:'undervault', dx:6,   dz:14, water:true},
@@ -839,7 +839,8 @@ var KR_DATA = (function(){
       {f:'galley',     zone:'haven', dx:16,  dz:-2},
       {f:'chemlab',    zone:'haven', dx:4,   dz:-14},
       {f:'bench',      zone:'haven', dx:14,  dz:6},
-      {f:'galley',     zone:'cinder', dx:-12, dz:2},
+      {f:'galley',     zone:'cinder', dx:-14, dz:11},   // Brinemoor's communal cookhouse, inside the village
+      {f:'bench',      zone:'rustflats', dx:-23, dz:-29},   // Driftrock fixes everything — of course it has a bench
       // village services along the road — the journey shouldn't require hauling home
       {f:'galley',     zone:'glasswood', dx:-8,  dz:-12},
       {f:'chemlab',    zone:'glasswood', dx:-20, dz:-12},

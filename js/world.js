@@ -455,10 +455,10 @@ function scatterDecor(){
     if(rng()<0.4){ const top=box(1.3,0.3,1.3, 0x5a526c); top.position.y=h+0.15; g.add(top); }
     return g; };
   const ashrock=rng=>{ const s=0.5+rng()*1.1; const m=new THREE.Mesh(new THREE.IcosahedronGeometry(s,0), mat(0x2e3238)); m.position.y=s*0.45; const g=new THREE.Group(); g.add(m); return g; };
-  place(regionByZone.glasswood, tree, 64, 0.7);
+  place(regionByZone.glasswood, tree, 74, 0.7);
   place(regionByZone.meridian, tree, 8, 0.7);
   place(regionByZone.meridian, rock, 8, 0.8);
-  place(regionByZone.rustflats, wreck, 22, 1.3);
+  place(regionByZone.rustflats, wreck, 27, 1.3);
   place(regionByZone.rustflats, rock, 8, 0.8);
   place(regionByZone.kelvin, spike, 24, 0.7);
   place(regionByZone.kelvin, rock, 6, 0.8);
@@ -802,6 +802,90 @@ function buildVillages(){
   // camp fire light at the Meridian galley
   const mr=regionByZone.meridian;
   const campLight=new THREE.PointLight(0xff9a4a, 0.9, 24); campLight.position.set(mr.x+13, heightAt(mr.x+13,mr.z+2)+2.4, mr.z+2); scene.add(campLight);
+}
+
+/* ---------------- authored set-pieces ----------------
+   Hand-placed scenes that make locations read as places:
+   the crash that starts the story, the arena that ends it. */
+function buildSetPieces(){
+  const rng = mulberry32(7331);
+  // — the Meridian's crash furrow: a debris line plowed east of the hull —
+  const mr = regionByZone.meridian;
+  for(let i=0;i<6;i++){
+    const t = i/5;
+    const x = mr.x + lerp(30, -12, t) + (rng()-0.5)*4;
+    const z = mr.z + lerp(16, 0, t) + (rng()-0.5)*4;
+    if(!walkable(x,z)) continue;
+    const scorch = new THREE.Mesh(new THREE.CircleGeometry(2.2+t*2, 14),
+      new THREE.MeshLambertMaterial({color:0x2e2620, map:TEX.ground, transparent:true, opacity:0.5, depthWrite:false}));
+    scorch.rotation.x = -Math.PI/2;
+    scorch.position.set(x, heightAt(x,z)+0.05, z);
+    scene.add(scorch);
+    const chunk = texBox(0.6+t*1.8, 0.3+t*0.9, 0.5+t*1.2, 0x5a4636, TEX.hull);
+    chunk.position.set(x+(rng()-0.5)*2, heightAt(x,z)+0.25, z+(rng()-0.5)*2);
+    chunk.rotation.set(rng()*0.6, rng()*3, rng()*0.5);
+    scene.add(chunk);
+    if(i>2) obstacles.push({x, z, r:0.9});
+  }
+  // — WARDEN-7's arena: a ring of broken pillars before the sealed archive door —
+  const uv = regionByZone.undervault;
+  const ax = uv.x+2, az = uv.z-4;
+  for(let i=0;i<8;i++){
+    const a = i/8*Math.PI*2 + 0.4;
+    const px = ax+Math.cos(a)*13, pz = az+Math.sin(a)*13;
+    if(!walkable(px,pz)) continue;
+    const h = 3+rng()*2.5;
+    const p = texBox(1.1, h, 1.1, 0x564e6a, TEX.rock, {emissive:0x241e34, emissiveIntensity:0.45});
+    p.position.set(px, heightAt(px,pz)+h/2, pz);
+    p.rotation.y = a; p.rotation.z = (rng()-0.5)*0.12;
+    scene.add(p);
+    obstacles.push({x:px, z:pz, r:0.9});
+  }
+  // the archive door itself — what fifty years of silence was guarding
+  const dx2 = ax, dz2 = az-19;
+  const doorH = heightAt(dx2,dz2);
+  [[-3.2],[3.2]].forEach(([ox])=>{
+    const py = texBox(1.6, 9, 1.8, 0x4a4260, TEX.rock, {emissive:0x1e1830, emissiveIntensity:0.5});
+    py.position.set(dx2+ox, doorH+4.5, dz2); scene.add(py);
+  });
+  const lintel = texBox(8.6, 1.4, 2, 0x564e6a, TEX.rock); lintel.position.set(dx2, doorH+9.4, dz2); scene.add(lintel);
+  const slab = texBox(4.6, 7.6, 0.7, 0x36304a, TEX.hull, {emissive:0x141020, emissiveIntensity:0.6});
+  slab.position.set(dx2, doorH+3.8, dz2); scene.add(slab);
+  const seam = box(0.18, 7.2, 0.1, 0xc8b8ff, {emissive:0x8a6aff, emissiveIntensity:1.4});
+  seam.position.set(dx2, doorH+3.8, dz2+0.4); scene.add(seam);
+  obstacles.push({x:dx2, z:dz2, r:4.6});
+  // — the Singularity Scar: a scorched ring and an obelisk that drinks the light —
+  const sx = uv.x+28, sz = uv.z+27;
+  const scarRing = new THREE.Mesh(new THREE.RingGeometry(4.5, 8.5, 26),
+    new THREE.MeshLambertMaterial({color:0x18141f, transparent:true, opacity:0.7, depthWrite:false}));
+  scarRing.rotation.x = -Math.PI/2;
+  scarRing.position.set(sx, heightAt(sx,sz)+0.06, sz);
+  scene.add(scarRing);
+  const obelisk = new THREE.Mesh(new THREE.ConeGeometry(0.9, 5.4, 4), mat(0x0c0a12, {emissive:0x0a0612, emissiveIntensity:0.8}));
+  obelisk.position.set(sx, heightAt(sx,sz)+2.7, sz);
+  obelisk.rotation.y = 0.5;
+  scene.add(obelisk);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), mat(0xb09aff, {emissive:0x8a6aff, emissiveIntensity:1.6}));
+  tip.position.set(sx, heightAt(sx,sz)+5.6, sz);
+  scene.add(tip);
+  obstacles.push({x:sx, z:sz, r:1.4});
+  // — worn paths at every gate: the routes people actually walk —
+  for(const c of CORRIDORS){
+    if(!c.gate) continue;
+    const gx = lerp(c.ax, c.bx, 0.5), gz = lerp(c.az, c.bz, 0.5);
+    const dirx = (c.bx-c.ax), dirz = (c.bz-c.az);
+    const dl = Math.hypot(dirx, dirz);
+    for(let i=-1;i<=1;i++){
+      const px = gx + dirx/dl*i*9, pz = gz + dirz/dl*i*9;
+      const path = new THREE.Mesh(new THREE.CircleGeometry(4.4, 14),
+        new THREE.MeshLambertMaterial({color:0x463c30, map:TEX.ground, transparent:true, opacity:0.4, depthWrite:false}));
+      path.rotation.x = -Math.PI/2;
+      path.scale.x = 1.7;
+      path.rotation.z = Math.atan2(dirz, dirx);
+      path.position.set(px, heightAt(px,pz)+0.04, pz);
+      scene.add(path);
+    }
+  }
 }
 
 /* ---------------- movement & collision ---------------- */
@@ -1484,6 +1568,7 @@ function init(apiIn){
   buildEntities();
   scatterDecor();
   buildVillages();
+  buildSetPieces();
   // player
   const h=makeHumanoid(0x2a8a7a, 0x3fe0c8);
   player={group:h.group, parts:h.parts, x:W.camp.x, z:W.camp.z, tgt:null, pending:null, face:2.6, moving:false, working:false, workUid:null, animT:0, lungeT:0};
