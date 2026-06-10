@@ -1163,6 +1163,22 @@ function nearestAlive(eid, maxD){
   }
   return best;
 }
+function nearestEnemy(maxD){
+  let best=null, bd=maxD;
+  for(const e of ents) if(e.kind==='enemy' && e.state!=='dead'){
+    const d=distTo(e); if(d<bd){bd=d; best=e;}
+  }
+  return best;
+}
+function nearestInteractable(maxD){
+  let best=null, bd=maxD;
+  for(const e of ents){
+    if(e.kind==='enemy' || e.kind==='gate') continue;
+    const d=distTo(e); if(d<bd){bd=d; best=e;}
+  }
+  return best;
+}
+function zoom(d){ cam.dist = clamp(cam.dist + d, 9, 46); }
 
 /* ---------------- per-frame update ---------------- */
 function updatePlayer(dt){
@@ -1599,7 +1615,7 @@ function init(apiIn){
 }
 
 return {
-  init, splat, attackFx, killEntity, setEngaged, respawnAtCamp, moveToEntity, distTo, nearestAlive, drawMinimap, drawLocalMap, pump, flash,
+  init, splat, attackFx, killEntity, setEngaged, respawnAtCamp, moveToEntity, distTo, nearestAlive, nearestEnemy, nearestInteractable, zoom, drawMinimap, drawLocalMap, pump, flash,
   byUid:uid=>entByUid[uid],
   get entities(){ return ents; },
   playerPos:()=>({x:player.x, z:player.z}),

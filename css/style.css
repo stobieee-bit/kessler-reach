@@ -351,6 +351,20 @@ input,textarea,select{font:inherit;}
 #specBtn:not(.ready){cursor:default;}
 @keyframes specpulse{0%,100%{box-shadow:0 0 6px rgba(192,90,224,.3);} 50%{box-shadow:0 0 18px rgba(192,90,224,.7);}}
 
+/* ---------- keyboard target strip ---------- */
+#keyHint{
+  position:absolute; bottom:14px; left:14px; z-index:30; pointer-events:none;
+  display:none; flex-direction:column; gap:4px;
+}
+#keyHint span{
+  background:rgba(13,19,31,.85); border:1px solid var(--line); border-radius:8px;
+  padding:4px 10px; font-size:11.5px; color:var(--txt); white-space:nowrap;
+}
+#keyHint b{
+  display:inline-block; min-width:16px; text-align:center; margin-right:6px;
+  background:#22324e; border-radius:4px; padding:0 4px; color:var(--acc); font-size:10.5px;
+}
+
 /* ---------- 3D viewport ---------- */
 #main{padding:0;}
 #viewport{position:relative; flex:1; min-height:0; overflow:hidden; border-radius:10px;}

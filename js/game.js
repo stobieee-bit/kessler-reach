@@ -1664,7 +1664,10 @@ function showHelp(backFn){
     <div class="guide-row"><span class="g-lvl">Click</span><span style="flex:1">Walk there · use whatever you clicked (nodes, machines, people, hostiles)</span></div>
     <div class="guide-row"><span class="g-lvl">WASD</span><span style="flex:1">Move directly (camera-relative)</span></div>
     <div class="guide-row"><span class="g-lvl">Drag</span><span style="flex:1">Orbit the camera (arrow keys too · pinch or scroll to zoom)</span></div>
+    <div class="guide-row"><span class="g-lvl">E / F</span><span style="flex:1">Use the nearest thing / fight the nearest hostile — the game is fully playable without a mouse</span></div>
     <div class="guide-row"><span class="g-lvl">Space</span><span style="flex:1">Special attack at full adrenaline — Slam (kinetics) · Volley (marksman) · Stasis (psionics)</span></div>
+    <div class="guide-row"><span class="g-lvl">− / =</span><span style="flex:1">Zoom the camera out / in</span></div>
+    <div class="guide-row"><span class="g-lvl">Enter</span><span style="flex:1">Advance or accept dialogue · Tab reaches every button</span></div>
     <div class="guide-row"><span class="g-lvl">1–5</span><span style="flex:1">Side panels: Cargo · Gear · Missions · Map · Feats</span></div>
     <div class="guide-row"><span class="g-lvl">H / Esc</span><span style="flex:1">This screen / close panels</span></div>
     <p style="color:var(--acc); margin-top:10px;">The loop</p>
@@ -1812,6 +1815,21 @@ function renderTracker(){
   if(html!==trackerCache){ trackerCache=html; el.innerHTML=html; el.style.display=html?'block':'none'; }
 }
 
+/* ================= keyboard target strip ================= */
+let keyHintCache = '';
+function updateKeyHint(){
+  const el = $('#keyHint');
+  if(!el || !state) return;
+  let html = '';
+  if(!$('.modal-back')){
+    const t = KRWorld.nearestInteractable(14);
+    if(t){ const h = worldApi.hint(t); html += `<span><b>E</b> ${h.text}</span>`; }
+    const f = KRWorld.nearestEnemy(16);
+    if(f) html += `<span><b>F</b> ${f.elite?'★ ':''}${f.def.name}</span>`;
+  }
+  if(html!==keyHintCache){ keyHintCache=html; el.innerHTML=html; el.style.display=html?'flex':'none'; }
+}
+
 /* ================= render all ================= */
 function renderAll(){
   renderTop(); renderSkills(); renderSide(); renderLog(); renderFloat(); renderTracker();
@@ -1871,6 +1889,22 @@ document.addEventListener('keydown', e=>{
   if(tabKeys[e.key]){ ui.sideTab=tabKeys[e.key]; renderSide(); }
   else if(e.key==='h'||e.key==='H'){ showHelp(); }
   else if(e.key===' '){ useSpecial(); e.preventDefault(); }
+  else if(e.key==='e'||e.key==='E'){            // use the nearest thing — full mouse replacement
+    const t = KRWorld.nearestInteractable(14);
+    if(t){ worldApi.onTarget(t); KRWorld.moveToEntity(t); }
+  }
+  else if(e.key==='f'||e.key==='F'){            // fight the nearest hostile
+    const t = KRWorld.nearestEnemy(16);
+    if(t){ worldApi.onTarget(t); KRWorld.moveToEntity(t); }
+  }
+  else if(e.key==='-'||e.key==='_'){ KRWorld.zoom(3); }
+  else if(e.key==='='||e.key==='+'){ KRWorld.zoom(-3); }
+  else if(e.key==='Enter'){
+    if(ui.float && ui.float.type==='talk'){
+      const b = $('#floatPanel [data-dlgnext]') || $('#floatPanel [data-dlgaccept]') || $('#floatPanel [data-dlgturnin]') || $('#floatPanel [data-closefloat]');
+      if(b){ b.click(); e.preventDefault(); }
+    }
+  }
 });
 $('#specBtn').addEventListener('click', function(){ useSpecial(); this.blur(); });
 $('#btnSettings').addEventListener('click', ()=>{ if(state) showSettings(); });
@@ -1924,6 +1958,7 @@ setInterval(()=>{
     if(ui.float && ui.float.type==='plot') renderFloat();   // live growth bar
     checkAchievements();
     renderTracker();
+    updateKeyHint();
   }
   const hm = $('#hudmap');
   if(hm && !document.hidden) KRWorld.drawLocalMap(hm);
