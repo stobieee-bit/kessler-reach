@@ -598,6 +598,12 @@ function buildVillages(){
   const rng = mulberry32(99);
   for(const v of (W.villages||[])){
     const r=regionByZone[v.zone]; const cx=r.x+v.dx, cz=r.z+v.dz;
+    // trampled ground under the settlement
+    const dirt=new THREE.Mesh(new THREE.CircleGeometry(13, 22),
+      new THREE.MeshLambertMaterial({color:0x4a4034, map:TEX.ground, transparent:true, opacity:0.55, depthWrite:false}));
+    dirt.rotation.x=-Math.PI/2;
+    dirt.position.set(cx, heightAt(cx,cz)+0.06, cz);
+    scene.add(dirt);
     // every settlement gets a signpost facing the road
     const sign=makeSignpost(v.name);
     const sx=cx+9, sz=cz+9;
@@ -1282,7 +1288,7 @@ function init(apiIn){
   hintEl = document.getElementById('hint');
   canvas = document.getElementById('gl');
   renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));   // chunky-clean, and kind to laptops
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(55, 1, 0.1, 2200);
   function resize(){

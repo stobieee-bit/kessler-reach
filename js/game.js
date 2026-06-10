@@ -131,7 +131,7 @@ function freshState(callsign){
     skills, cargo:{}, gear:{weapon:null, suit:null, visor:null, multitool:null, gadget:null},
     zone:'meridian', pos:{x:D.WORLD.camp.x, z:D.WORLD.camp.z},
     unlockedZones:[], seenZones:[], visited:[], contracts:[], unlockedShops:[],
-    event:null, nextEventAt:0, milestonesHit:[],
+    event:null, nextEventAt:0, milestonesHit:[], hints:[],
     action:null, combat:null,
     quests:{}, buffs:[], notifiedQ:[],
     settings:{autoEat:true, eatAt:0.45, sound:true},
@@ -148,11 +148,16 @@ function migrate(s){
   if(s.action && !D.ACTIONS[s.action.id]) s.action=null;
   return s;
 }
+let saveCount = 0;
 function save(){
   if(!state) return;
   state.lastSeen = Date.now();
   try{ state.pos = KRWorld.playerPos(); }catch(e){}
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
+  try{
+    const json = JSON.stringify(state);
+    localStorage.setItem(SAVE_KEY, json);
+    if(++saveCount % 10 === 0) localStorage.setItem(SAVE_KEY+'_backup', json);  // rolling safety copy
+  }catch(e){}
 }
 
 /* ================= derived stats ================= */
@@ -401,6 +406,7 @@ function completeAction(a, report){
     if(a.outputs) for(const k in a.outputs){
       addItem(k, a.outputs[k]);
       if(report) report.items[k]=(report.items[k]||0)+a.outputs[k];
+      if(!report && a.type==='gather') KRWorld.splat('player', `+${a.outputs[k]} ${D.ITEMS[k].name}`, 'yield');
       onCraftEvent(a, k, a.outputs[k], report);
     }
     if(a.credits){ addCredits(rint(a.credits[0], a.credits[1]), report); }
@@ -430,6 +436,7 @@ function completeAction(a, report){
     gainXp(a.skill, a.xp, report);
     if(a.type==='hack') onHackEvent(a.id, report);
     if(a.type==='pilot') onRunEvent(report);
+    if(!report) hintOnce('gather', '<b>Tip:</b> everything you gather stacks in your Cargo Hold — sell it, cook it, or build with it at any settlement workshop.');
   }else{
     gainXp(a.skill, Math.max(1, Math.round(a.xp*0.25)), report);
     const dmg = rint(2, Math.max(4, Math.round(maxHp()*0.08)));
@@ -460,6 +467,12 @@ function tickAction(dt){
 }
 
 /* ================= combat (world entities) ================= */
+function hintOnce(id, html){
+  if(!state.hints) state.hints=[];
+  if(state.hints.includes(id)) return;
+  state.hints.push(id);
+  toast(html, '', '');
+}
 function engage(ent){
   if(state.combat && state.combat.ent===ent.uid) return;
   stopAction();
@@ -467,6 +480,7 @@ function engage(ent){
   state.combat = {ent:ent.uid, eid:ent.eid, pT:weaponSpd()*0.6, eT:D.ENEMIES[ent.eid].spd*0.8};
   KRWorld.setEngaged(ent, true);
   addLog(`Engaged ${ent.def.name}.`);
+  hintOnce('combat', '<b>Tip:</b> auto-eat keeps you alive if you carry meals. Walk away any time to disengage — and craft a weapon at the fabricator if you haven\'t.');
 }
 function disengage(){
   if(!state.combat) return;
@@ -511,6 +525,7 @@ function onKillEntity(ent, E){
   }
   state.stats.kills++;
   onKillEvent(E.id);
+  KRWorld.splat('player', `+${fmt(cr)} cr`, 'cr');
   addLog(`Defeated ${E.name} — ${fmt(cr)} cr${lootMsg.length? ', '+lootMsg.join(', '):''}.`,'good');
   if(E.boss){ toast(`<b>${E.name} destroyed!</b>`,'quest','The Undervault\'s halls fall silent.'); sndQuest(); }
   KRWorld.killEntity(ent);
@@ -1173,7 +1188,7 @@ function renderSide(){
   else if(ui.sideTab==='gear') html = gearHtml();
   else if(ui.sideTab==='missions') html = missionsHtml();
   else if(ui.sideTab==='map') html = `<canvas id="mmap" width="330" height="330" style="width:100%; border-radius:10px;"></canvas>
-    <div class="empty-note">⬤ open gate · ⬤ sealed gate. Walk there — no teleports in the Reach.</div>`;
+    <div class="empty-note"><span style="color:var(--acc)">⬤</span> open gate · <span style="color:var(--bad)">⬤</span> sealed gate · <span style="color:var(--gold)">▪</span> settlement · <span style="color:var(--gold)">◌</span> live event<br>Walk there — no teleports in the Reach.</div>`;
   el.innerHTML = html;
   el.scrollTop = st;
   if(ui.sideTab==='map'){ const cv=$('#mmap'); if(cv) KRWorld.drawMinimap(cv); }
@@ -1239,6 +1254,15 @@ function gearHtml(){
     <div class="stat-line"><span>Gather speed bonus</span><b>+${Math.round((g.gspd+speedBuff())*100)}%</b></div>
     <div class="stat-line"><span>XP bonus</span><b>+${Math.round(g.xpb*100)}%</b></div>
     <div class="stat-line"><span>Auto-eat</span><b>${state.settings.autoEat?'on, below '+Math.round(state.settings.eatAt*100)+'%':'off'}</b></div>
+  </div>`;
+  const tot = totalLevel();
+  const next = MILESTONES.find(m=>tot<m.sum);
+  html += `<div class="stat-sheet" style="margin-top:8px;">
+    <div class="stat-line"><span>Total level</span><b>${fmt(tot)}</b></div>
+    ${next
+      ? `<div class="stat-line"><span>Next milestone (Σ${next.sum})</span><b>${next.desc}</b></div>
+         <div class="bar" style="margin-top:6px;"><i style="width:${clamp(tot/next.sum*100,0,100)}%"></i></div>`
+      : '<div class="stat-line"><span>Milestones</span><b>all reached — Polymath</b></div>'}
   </div>`;
   return html;
 }
@@ -1313,7 +1337,7 @@ function closeModal(){ $('#modalRoot').innerHTML=''; }
 function showIntro(){
   showModal(`
     <div class="intro-title"><span class="ka">KESSLER</span> REACH</div>
-    <div class="intro-sub">a frontier skilling RPG · v1.2</div>
+    <div class="intro-sub">a frontier skilling RPG · v1.3</div>
     <p>${D.INTRO_LORE}</p>
     <p style="color:var(--acc)">Click the ground to walk (or WASD). Click glowing things to use them. Drag to orbit, scroll to zoom.</p>
     <label>Your callsign</label>
@@ -1347,7 +1371,7 @@ function showAway(report){
 function showSettings(){
   const s = state.settings;
   const playH = (Date.now()-state.created)/3600000;
-  showModal(`<h2>Settings & Save <span style="color:var(--faint); font-size:11px; letter-spacing:1px;">v1.2</span></h2>
+  showModal(`<h2>Settings & Save <span style="color:var(--faint); font-size:11px; letter-spacing:1px;">v1.3</span></h2>
     <div class="setting-row"><span class="grow">Callsign</span><input type="text" id="setName" maxlength="16" style="width:160px" value="${esc(state.callsign)}"></div>
     <div class="setting-row"><span class="grow">Auto-eat in combat</span><input type="checkbox" id="setAutoEat" ${s.autoEat?'checked':''}></div>
     <div class="setting-row"><span class="grow">Auto-eat below</span>
@@ -1417,6 +1441,7 @@ function renderAll(){
 document.addEventListener('click', e=>{
   if(state && state.settings.sound && !ambient) startAmbient();
   const t = e.target.closest('[data-sidetab],[data-start],[data-stop],[data-sel],[data-equip],[data-unequip],[data-use],[data-sell],[data-buy],[data-quest],[data-qstart],[data-qclaim],[data-skill],[data-close-modal],[data-closefloat],[data-contract],[data-dlgnext],[data-dlgaccept],[data-dlgturnin],[data-dlgtrade]');
+  if(t) blip(740, .035, 'sine', .015);   // soft UI tick
   if(!t){
     const back = e.target.classList && e.target.classList.contains('modal-back');
     if(back && !e.target.dataset.locked) closeModal();

@@ -325,6 +325,8 @@ input,textarea,select{font:inherit;}
 }
 .wsplat.hitp{color:#7dffcf;} .wsplat.hite{color:#ff8d98;} .wsplat.heal{color:#9fe87a;}
 .wsplat.crit{color:var(--gold); font-size:14px; letter-spacing:1px;}
+.wsplat.cr{color:var(--gold); font-size:13px;}
+.wsplat.yield{color:#bfe8d0; font-size:11.5px; font-weight:600;}
 .wname.elite{color:var(--gold); text-shadow:0 1px 3px #000, 0 0 10px rgba(255,195,92,.5);}
 .wsplat.miss{color:#8aa0b8; font-size:12px; font-weight:600;}
 .wprog{

@@ -375,7 +375,7 @@ var KR_DATA = (function(){
       {type:'collect', item:'mirrorscale', qty:4},
     ],
     rewards:{credits:2800, xp:{trawling:600, synthesis:300}, items:{tidecaller_charm:1}, unlockShop:'siska'}});
-  Q('q13', {name:'Roots in the Glass', giver:'iva', reqs:{quests:['q3'], skills:{xenobotany:22}},
+  Q('q13', {name:'Roots in the Glass', giver:'iva', reqs:{quests:['q3'], skills:{xenobotany:22, chemistry:15}},
     blurb:'Verdant Hollow — three platforms and a greenhouse among the chiming trees — is the Verge\'s only research station, and the sporeback striders have decided it\'s edible. Iva Ren needs resin stocks rebuilt, combat stims brewed at the Hollow\'s own lab, and the striders taught some manners.',
     objectives:[
       {type:'collect', item:'glasswood_resin', qty:12},
@@ -486,6 +486,7 @@ var KR_DATA = (function(){
         'If your stim glows green, drink it. If it glows red, sell it to someone you dislike.',
         'Pyrelace burns at exactly blood temperature. The Reach has a sense of humor.']}]},
     {id:'halden', name:'Halden Crowe', role:'Cryo-surveyor', icon:'🧊', zone:'haven', dx:-12, dz:-4, roam:5, suit:0x8aa4c8, visor:0xcfe8ff, dlg:[
+      {when:'claimed:q11', say:['So the Shatter was aimed. Fifty years I blamed bad luck. Turns out the sky had better aim than luck ever did. Thank you for the truth, Reachwarden — it warms better than the heaters.']},
       {when:'available:q4', offer:'q4', say:[
         'You\'ve got working drills and a pulse — that\'s two more than my last survey team.',
         'Kelvin Deep. Corporate dug too far down before the Shatter, then left everything: the ore, the vaults, the... residents. I need the survey finished.',
@@ -530,6 +531,7 @@ var KR_DATA = (function(){
         'Every wreck in the sky is a sentence from a book the Reach forgot how to read.',
         'The debris ring sets in the west this month. The old calendars called it Lantern Season.']}]},
     {id:'reyes', name:'Dockmaster Reyes', role:'Runs the Haven hangar', icon:'🛰', zone:'haven', dx:-22, dz:-2, roam:5, suit:0x8a93a8, visor:0xffd9a0, dlg:[
+      {when:'claimed:q11', say:['Word\'s out, you know. Not the whole truth — Nyx is careful — but enough that pilots fly the ring lanes quieter now. Like the sky\'s listening. Maybe it always was.']},
       {when:'claimed:q5', say:['Vex still tells people about your vantium run. In the version from last week you did it blindfolded.']},
       {say:['Canyon Skim\'s a milk run. Kessler Threading has a memorial plaque. Work your way up, yeah?',
         'Every pilot who brags about the junk stream is lying or new. The good ones just shrug.',

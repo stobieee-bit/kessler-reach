@@ -1,6 +1,8 @@
 # KESSLER REACH
 *A frontier skilling RPG in a 3D open world, for the browser. No installs, no build step, no servers.*
 
+**▶ Play now: https://stobieee-bit.github.io/kessler-reach/**
+
 Fifty years ago an orbital cascade — **the Shatter** — chewed the Reach's sky into a permanent
 storm of wreckage. You just crash-landed in the bones of the hauler *Meridian*. Salvage, drill,
 trawl, fabricate, hack and fly your way from castaway to legend.
@@ -40,7 +42,7 @@ Use **⚙ Settings** to export/import your save as a string.
 |---|---|
 | **15 original skills** | Salvaging, Extraction, Xenobotany, Trawling, Fabrication, Synthesis, Chemistry, Engineering, Kinetics, Marksmanship, Psionics, Resilience, Vitality, Hacking, Piloting |
 | **Levels 1–100, no dead ranges** | Original XP curve (9% compounding); content at every tier including the 60–90 stretch (obsidite gear, brinemetal, echo blooms, phasefin, singularity shards) |
-| **7 zones, 2 villages, 1 town** | The Meridian crash site, the Rustflats with scavver-built **Driftrock**, Glasswood Verge, **Haven Station** with its market plaza, Cinder Sound with stilt-village **Brinemoor**, Kelvin Deep, the Undervault |
+| **7 zones, 5 settlements, 1 town** | The Meridian camp; scavver-built **Driftrock**; **Verdant Hollow**'s tree-platforms and greenhouse in the Verge; **Haven Station**'s market plaza; stilt-village **Brinemoor** on the Sound; **Borehole 9**'s arch-huts and drill rig in the deep ice; **Threshold Camp** at the Undervault door — each with its own architecture, services, people and signpost |
 | **13 named NPCs** | Roaming, authored characters — quartermasters, chemists, archivists, village elders, scavver kids — with quest-state-aware dialogue |
 | **98 items / 16 hostiles** | 7-tier gathering & gear chains; Scrap Hounds to Rust Titans, Echo Shades, Shard Golems and the boss WARDEN-7 |
 | **11 missions** | Survival opening → village arcs (Driftrock Debt, Tides of Brinemoor) → the Undervault campaign → a post-boss revelation arc about what the Shatter really was, ending at the title "Reachwarden" |
