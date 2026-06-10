@@ -428,4 +428,9 @@ input,textarea,select{font:inherit;}
   #app{display:flex; flex-direction:column; height:auto;}
   #main,#side,#skillbar{min-height:300px;}
   #viewport{min-height:420px;}
+  #hudmap{width:104px; height:104px;}
+  #tracker{max-width:168px; padding:7px 9px;}
+  .trk-name{font-size:11px;} .trk-obj{font-size:10.5px;}
+  #specBtn{width:150px; height:32px; font-size:10.5px; bottom:10px;}
+  #floatPanel{max-width:88%;}
 }

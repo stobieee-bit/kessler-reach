@@ -667,6 +667,7 @@ function tickCombat(dt){
         const dmg = rint(1, pMaxHit());
         ent.hp -= dmg;
         KRWorld.splat(ent, dmg, 'hitp');
+        KRWorld.flash(ent);
         blip(420,.05,'square',.018);
         gainXp(w.style, dmg*2.2);
         gainXp('vitality', dmg*0.9);
@@ -687,6 +688,7 @@ function tickCombat(dt){
       if(Math.random()<hitChance){
         const dmg = rint(1, Math.round(E.hit * (ent.elite?1.4:1)));
         KRWorld.splat('player', dmg, 'hite');
+        KRWorld.flash('player');
         gainXp('resilience', dmg*1.3);
         gainAdren(3);
         applyDamage(dmg, `${E.name} tore through your suit`);

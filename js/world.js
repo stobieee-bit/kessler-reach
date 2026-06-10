@@ -168,6 +168,12 @@ function blobShadow(r){
 }
 
 /* ---------------- player & humanoids ---------------- */
+const GEAR_TINTS = {
+  patchwork_suit:0x6a6a58, ferrox_exosuit:0x8a4a3a, vantium_carapace:0x5a6aa8,
+  aurium_aegis:0xc8a23c, obsidite_bulwark:0x32303e, neutronite_warplate:0x7ae8d8,
+  patchwork_visor:0x9a9a8a, ferrox_visor:0xcf7a5a, vantium_visor:0x8aa0ff,
+  aurium_visor:0xffd97a, obsidite_gaze:0xb09aff, neutronite_visor:0x9affec,
+};
 function makeHumanoid(suit, visor){
   const g = new THREE.Group();
   const torso = box(0.55,0.62,0.32, suit); torso.position.y=1.06; g.add(torso);
@@ -177,11 +183,12 @@ function makeHumanoid(suit, visor){
   const tip = new THREE.Mesh(new THREE.SphereGeometry(0.045,6,6), mat(visor,{emissive:visor, emissiveIntensity:1})); tip.position.set(-0.14,1.76,-0.3); g.add(tip);
   const head = box(0.34,0.3,0.3, 0xc9b9a0); head.position.y=1.58; g.add(head);
   const vis = box(0.3,0.1,0.06, visor, {emissive:visor, emissiveIntensity:0.9}); vis.position.set(0,1.6,0.16); g.add(vis);
-  const parts = {arms:[], legs:[], torso, head};
+  const parts = {arms:[], legs:[], torso, head, suitMats:[torso.material], visorMat:vis.material};
   [[-0.37,1],[0.37,1]].forEach(([sx])=>{
     const p=new THREE.Group(); p.position.set(sx,1.32,0);
     const pad=box(0.2,0.14,0.2, suit); pad.position.y=0.04; p.add(pad);
     const a=box(0.14,0.5,0.14, suit); a.position.y=-0.25; p.add(a); g.add(p); parts.arms.push(p);
+    parts.suitMats.push(pad.material, a.material);
   });
   [[-0.16],[0.16]].forEach(([sx])=>{
     const p=new THREE.Group(); p.position.set(sx,0.76,0);
@@ -353,7 +360,8 @@ function buildSky(){
     sp[i*3]=Math.sin(p)*Math.cos(t)*r; sp[i*3+1]=Math.cos(p)*r*0.9+60; sp[i*3+2]=Math.sin(p)*Math.sin(t)*r;
   }
   const sg=new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp,3));
-  scene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xcfe0f2, size:1.7, sizeAttenuation:false, fog:false})));
+  starsMat = new THREE.PointsMaterial({color:0xcfe0f2, size:1.7, sizeAttenuation:false, fog:false, transparent:true, opacity:1});
+  scene.add(new THREE.Points(sg, starsMat));
   // the shattered moon
   const moon=new THREE.Mesh(new THREE.SphereGeometry(52,20,16), new THREE.MeshBasicMaterial({color:0x8a93a8, fog:false}));
   moon.position.set(420,300,-560); scene.add(moon);
@@ -376,10 +384,28 @@ function buildSky(){
   }
   ring.rotation.z=0.16; scene.add(ring);
   scene.userData.ring=ring;
-  // lights
-  scene.add(new THREE.HemisphereLight(0x9fd8e8, 0x4a3a30, 0.85));
-  const sun=new THREE.DirectionalLight(0xfff2dd, 0.85); sun.position.set(120,180,-80); scene.add(sun);
+  // lights (kept as module refs so the day/night cycle can drive them)
+  hemiLight = new THREE.HemisphereLight(0x9fd8e8, 0x4a3a30, 0.85);
+  scene.add(hemiLight);
+  sunLight = new THREE.DirectionalLight(0xfff2dd, 0.85); sunLight.position.set(120,180,-80); scene.add(sunLight);
 }
+/* ---------------- day & night ----------------
+   A ten-minute cycle. Noon is bright and warm; night drops the ambient
+   so the villages' fires, lanterns and floodlights carry the scene.   */
+let hemiLight=null, sunLight=null, dayOverride=null;
+const _skyDay=new THREE.Color(0x0a0e1a), _skyNight=new THREE.Color(0x030509);
+const _fogDay=new THREE.Color(0x0a0e1a), _fogNight=new THREE.Color(0x05070e);
+function updateDayNight(){
+  if(!sunLight) return;
+  const phase = dayOverride!==null ? dayOverride : (Date.now()/1000 % 600)/600;
+  const day = 0.5 + 0.5*Math.sin(phase*Math.PI*2);          // 1 noon → 0 midnight
+  sunLight.intensity = 0.22 + 0.68*day;
+  hemiLight.intensity = 0.38 + 0.5*day;
+  scene.background.copy(_skyNight).lerp(_skyDay, day);
+  if(scene.fog) scene.fog.color.copy(_fogNight).lerp(_fogDay, day);
+  if(starsMat) starsMat.opacity = 0.35 + 0.65*(1-day);
+}
+let starsMat=null;
 function scatterDecor(){
   const rng = mulberry32(42);
   function place(r, fn, count, minD){
@@ -957,6 +983,23 @@ function splat(target, text, cls){
   splats.push({el, follow:target, dx:(Math.random()-0.5)*36, age:0, life:0.95});
 }
 const STYLE_COLORS = {kinetics:0x9fe8ff, marksmanship:0xffd35c, psionics:0xc08bff};
+function flashGroup(group){
+  group.traverse(o=>{
+    if(!o.isMesh || !o.material || !o.material.emissive) return;
+    if(!o.userData._em) o.userData._em = o.material.emissive.getHex();
+    o.material.emissive.setHex(0x991111);
+  });
+  setTimeout(()=>{
+    group.traverse(o=>{
+      if(o.isMesh && o.material && o.material.emissive && o.userData._em!==undefined)
+        o.material.emissive.setHex(o.userData._em);
+    });
+  }, 130);
+}
+function flash(target){
+  const g = target==='player' ? (player&&player.group) : (target&&target.group);
+  if(g) flashGroup(g);
+}
 function attackFx(src, dst, style){
   const from = src==='player' ? player : src;
   const to = dst==='player' ? player : dst;
@@ -1180,9 +1223,10 @@ function updateMisc(dt, t){
       if(e.group.userData.ripple) e.group.userData.ripple.rotation.z = t*0.8;
     }
   }
-  // debris ring drift + water shimmer
+  // debris ring drift + water shimmer + the turning of the day
   if(scene.userData.ring) scene.userData.ring.rotation.y += dt*0.004;
   if(TEX.water){ TEX.water.offset.x = t*0.006; TEX.water.offset.y = t*0.004; }
+  updateDayNight();
   // region detection
   regionPollT-=dt;
   if(regionPollT<=0){
@@ -1206,7 +1250,7 @@ function updateMisc(dt, t){
       }
     }
   }
-  // weapon visual matches equipped style
+  // worn gear shows on the drifter: weapon glow by style, suit & visor by tier
   gearPollT-=dt;
   if(gearPollT<=0){
     gearPollT=1;
@@ -1214,6 +1258,12 @@ function updateMisc(dt, t){
     const w = st && st.gear.weapon ? D.ITEMS[st.gear.weapon] : null;
     player.parts.weapon.visible=!!w;
     if(w) player.parts.weapon.material.color.set(STYLE_COLORS[w.style]||0x888888);
+    if(st){
+      const suitC = GEAR_TINTS[st.gear.suit] || 0x2a8a7a;
+      (player.parts.suitMats||[]).forEach(m=>m.color.set(suitC));
+      const visC = GEAR_TINTS[st.gear.visor] || 0x3fe0c8;
+      if(player.parts.visorMat){ player.parts.visorMat.color.set(visC); player.parts.visorMat.emissive.set(visC); }
+    }
   }
 }
 function updateCamera(){
@@ -1414,7 +1464,7 @@ function init(apiIn){
 }
 
 return {
-  init, splat, attackFx, killEntity, setEngaged, respawnAtCamp, moveToEntity, distTo, nearestAlive, drawMinimap, drawLocalMap, pump,
+  init, splat, attackFx, killEntity, setEngaged, respawnAtCamp, moveToEntity, distTo, nearestAlive, drawMinimap, drawLocalMap, pump, flash,
   byUid:uid=>entByUid[uid],
   get entities(){ return ents; },
   playerPos:()=>({x:player.x, z:player.z}),
@@ -1422,6 +1472,6 @@ return {
   startWork(uid){ if(player){ player.working=true; player.workUid=uid; } },
   stopWork(){ if(player){ player.working=false; player.workUid=null; } },
   camYaw:()=>cam.yaw,
-  _debug:{heightAt, walkable, walkField, regionAt},
+  _debug:{heightAt, walkable, walkField, regionAt, setDay(p){ dayOverride = (p===null||p===undefined)?null:p; }},
 };
 })();
