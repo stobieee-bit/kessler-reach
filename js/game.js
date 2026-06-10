@@ -1730,6 +1730,7 @@ document.addEventListener('click', e=>{
   if(state && state.settings.sound){ if(!ambient) startAmbient(); if(!music) startMusic(); }
   const t = e.target.closest('[data-sidetab],[data-start],[data-stop],[data-sel],[data-equip],[data-unequip],[data-use],[data-sell],[data-buy],[data-quest],[data-qstart],[data-qclaim],[data-qtrack],[data-skill],[data-close-modal],[data-closefloat],[data-contract],[data-dlgnext],[data-dlgaccept],[data-dlgturnin],[data-dlgtrade]');
   if(t) blip(740, .035, 'sine', .015);   // soft UI tick
+  if(t && t.tagName==='BUTTON') t.blur();   // Space must fire specials, never re-click the last button
   if(!t){
     const back = e.target.classList && e.target.classList.contains('modal-back');
     if(back && !e.target.dataset.locked) closeModal();
@@ -1777,7 +1778,7 @@ document.addEventListener('keydown', e=>{
   else if(e.key==='h'||e.key==='H'){ showHelp(); }
   else if(e.key===' '){ useSpecial(); e.preventDefault(); }
 });
-$('#specBtn').addEventListener('click', ()=>useSpecial());
+$('#specBtn').addEventListener('click', function(){ useSpecial(); this.blur(); });
 $('#btnSettings').addEventListener('click', ()=>{ if(state) showSettings(); });
 $('#btnHelp').addEventListener('click', ()=>showHelp());
 $('#hudmap').addEventListener('click', ()=>{ if(state){ ui.sideTab='map'; renderSide(); } });

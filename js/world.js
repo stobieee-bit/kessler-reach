@@ -776,6 +776,7 @@ let pdown=null, dragging=false;
 const touches=new Map();           // active pointers for pinch zoom
 let pinchD=0;
 function onPointerDown(ev){
+  if(ev.button===1) ev.preventDefault();                  // no middle-click autoscroll over the world
   touches.set(ev.pointerId, {x:ev.clientX, y:ev.clientY});
   if(touches.size===2){
     const a=[...touches.values()];
@@ -858,6 +859,7 @@ function onKey(ev, down){
   if(ev.target && (ev.target.tagName==='INPUT'||ev.target.tagName==='TEXTAREA'||ev.target.tagName==='SELECT')) return;
   const k=ev.key.toLowerCase();
   if(['w','a','s','d'].includes(k)){ keys[k]=down; if(down){ player.pending=null; player.tgt=null; api.onMove(); } }
+  if(k.startsWith('arrow')) ev.preventDefault();          // camera keys must never scroll the page
   if(down && k==='arrowleft') cam.yaw+=0.12;
   if(down && k==='arrowright') cam.yaw-=0.12;
   if(down && k==='arrowup') cam.pitch=clamp(cam.pitch+0.07,0.32,1.35);
@@ -1401,7 +1403,9 @@ function init(apiIn){
   window.addEventListener('pointerup', onPointerUp);
   window.addEventListener('pointercancel', ev=>{ touches.delete(ev.pointerId); pdown=null; dragging=false; });
   canvas.addEventListener('wheel', onWheel, {passive:false});
-  canvas.addEventListener('contextmenu', e=>e.preventDefault());
+  viewportEl.addEventListener('contextmenu', e=>e.preventDefault());   // whole play window, not just the canvas
+  viewportEl.addEventListener('dragstart', e=>e.preventDefault());
+  canvas.addEventListener('mousedown', e=>{ if(e.button===1) e.preventDefault(); });
   window.addEventListener('keydown', e=>onKey(e,true));
   window.addEventListener('keyup', e=>onKey(e,false));
   window.addEventListener('blur', ()=>{ for(const k in keys) keys[k]=false; });

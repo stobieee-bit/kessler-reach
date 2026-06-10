@@ -8,7 +8,9 @@
   --shadow:0 4px 24px rgba(0,0,0,.45);
 }
 *{box-sizing:border-box; margin:0; padding:0;}
-html,body{height:100%;}
+html,body{height:100%; overscroll-behavior:none;}
+#app, #toasts, #modalRoot{user-select:none; -webkit-user-select:none;}
+input, textarea{user-select:text; -webkit-user-select:text;}
 body{
   background:
     radial-gradient(1200px 600px at 75% -10%, #11203a 0%, transparent 60%),

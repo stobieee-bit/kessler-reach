@@ -1,13 +1,13 @@
 /* Kessler Reach service worker — offline play after first visit.
    Bump VERSION on every deploy (keep in sync with ?v= asset params). */
-const VERSION = 'kr-210';
+const VERSION = 'kr-211';
 const CORE = [
   './',
   'index.html',
-  'css/style.css?v=210',
-  'js/data.js?v=210',
-  'js/world.js?v=210',
-  'js/game.js?v=210',
+  'css/style.css?v=211',
+  'js/data.js?v=211',
+  'js/world.js?v=211',
+  'js/game.js?v=211',
   'lib/three.min.js',
   'icon.svg',
   'manifest.webmanifest',
