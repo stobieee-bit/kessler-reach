@@ -306,10 +306,38 @@ input,textarea,select{font:inherit;}
 .guide-row.no .g-lvl{color:var(--bad);}
 .guide-row.no{opacity:.6;}
 
+/* ---------- boot splash ---------- */
+#boot{
+  position:fixed; inset:0; z-index:200; background:#05070c;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  transition:opacity .6s;
+}
+#boot.off{opacity:0; pointer-events:none;}
+.boot-t{font-size:34px; font-weight:900; letter-spacing:8px; color:var(--acc); text-shadow:0 0 28px rgba(63,224,200,.6);}
+.boot-t span{color:var(--txt);}
+.boot-sub{color:var(--faint); font-size:12px; letter-spacing:3px; text-transform:uppercase; animation:bootpulse 1.6s infinite;}
+@keyframes bootpulse{0%,100%{opacity:.4;} 50%{opacity:1;}}
+
+/* ---------- HUD: local map + quest tracker ---------- */
+#hudmap{
+  position:absolute; top:10px; right:10px; z-index:30; cursor:pointer;
+  border-radius:50%; box-shadow:0 4px 16px rgba(0,0,0,.5); background:rgba(10,14,26,.6);
+}
+#hudmap:hover{box-shadow:0 0 14px rgba(63,224,200,.4);}
+#tracker{
+  position:absolute; top:10px; left:10px; z-index:30; pointer-events:none;
+  background:rgba(13,19,31,.82); border:1px solid var(--line); border-radius:10px;
+  padding:9px 12px; max-width:240px; display:none;
+}
+.trk-name{font-size:12px; font-weight:700; color:var(--gold); letter-spacing:.5px; margin-bottom:4px;}
+.trk-obj{font-size:11.5px; color:var(--txt); display:flex; gap:5px; padding:1.5px 0;}
+.trk-obj span{margin-left:auto; color:var(--dim); font-variant-numeric:tabular-nums;}
+.trk-obj.done{color:var(--xp);} .trk-obj.done span{color:var(--xp);}
+
 /* ---------- 3D viewport ---------- */
 #main{padding:0;}
 #viewport{position:relative; flex:1; min-height:0; overflow:hidden; border-radius:10px;}
-#gl{position:absolute; inset:0; width:100%; height:100%; display:block; outline:none;}
+#gl{position:absolute; inset:0; width:100%; height:100%; display:block; outline:none; touch-action:none;}
 #labels{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
 .wname{
   position:absolute; transform:translate(-50%,-100%); pointer-events:none; text-align:center;

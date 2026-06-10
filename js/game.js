@@ -134,8 +134,9 @@ function freshState(callsign){
     event:null, nextEventAt:0, milestonesHit:[], hints:[],
     action:null, combat:null,
     quests:{}, buffs:[], notifiedQ:[],
-    settings:{autoEat:true, eatAt:0.45, sound:true},
-    log:[], stats:{kills:0, deaths:0, actionsDone:0, crEarned:0},
+    settings:{autoEat:true, eatAt:0.45, sound:true, music:true, vol:{master:0.8, sfx:1, music:0.7}},
+    tracked:null, achievements:[],
+    log:[], stats:{kills:0, deaths:0, actionsDone:0, crEarned:0, alphaKills:0, contractsDone:0, cachesOpened:0, crits:0, eventXp:0},
   };
 }
 function migrate(s){
@@ -143,6 +144,8 @@ function migrate(s){
   for(const k in f) if(s[k]===undefined) s[k]=f[k];
   D.SKILLS.forEach(sk => { if(!s.skills[sk.id]) s.skills[sk.id]={xp:0}; });
   for(const k in f.settings) if(s.settings[k]===undefined) s.settings[k]=f.settings[k];
+  if(!s.settings.vol || typeof s.settings.vol.master!=='number') s.settings.vol={master:0.8, sfx:1, music:0.7};
+  for(const k in f.stats) if(s.stats[k]===undefined) s.stats[k]=f.stats[k];
   if(!s.pos || typeof s.pos.x!=='number') s.pos = {x:D.WORLD.camp.x, z:D.WORLD.camp.z};
   s.combat = null;                  // never resume mid-fight
   if(s.action && !D.ACTIONS[s.action.id]) s.action=null;
@@ -211,15 +214,64 @@ function toast(html, cls, sub){
   setTimeout(()=>{ t.classList.add('out'); setTimeout(()=>t.remove(), 320); }, 3600);
 }
 let actx = null;
+function vols(){ return (state && state.settings.vol) || {master:0.8, sfx:1, music:0.7}; }
 function blip(freq, dur, type, gain, delay){
   if(!state || !state.settings.sound) return;
+  const v = vols();
+  const g0 = (gain||0.035) * v.master * v.sfx;
+  if(g0 <= 0.0006) return;
   try{
     actx = actx || new (window.AudioContext||window.webkitAudioContext)();
     const o=actx.createOscillator(), g=actx.createGain(), t0=actx.currentTime+(delay||0);
     o.type=type||'square'; o.frequency.value=freq;
-    g.gain.setValueAtTime(gain||0.035, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0+(dur||0.09));
+    g.gain.setValueAtTime(g0, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0+(dur||0.09));
     o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0+(dur||0.09)+0.02);
   }catch(e){}
+}
+// action feedback
+const sfxGather = ()=>{ blip(195,.07,'square',.028); };
+const sfxCraft  = ()=>{ blip(620,.05,'square',.022); blip(880,.07,'square',.018,.05); };
+const sfxEat    = ()=>{ blip(500,.08,'sine',.032); blip(410,.06,'sine',.026,.07); };
+const sfxEquip  = ()=>{ blip(440,.06,'square',.028); blip(587,.07,'square',.022,.06); };
+const sfxSell   = ()=>{ blip(1240,.09,'sine',.035); };
+const sfxHack   = ()=>{ blip(700,.05,'square',.022); blip(932,.06,'square',.018,.06); };
+// generative score: sparse pentatonic notes over the ambient pad
+let music = null;
+function startMusic(){
+  if(music || !state || !state.settings.sound || !state.settings.music) return;
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const g = actx.createGain();
+    g.gain.value = 0.05 * vols().master * vols().music;
+    g.connect(actx.destination);
+    const SCALE = [220, 261.63, 293.66, 329.63, 392, 440, 523.25];
+    const timer = setInterval(()=>{
+      if(!state || !state.settings.sound || !state.settings.music) return;
+      if(Math.random() < 0.35) return;                       // rests keep it airy
+      const f = SCALE[Math.floor(Math.random()*SCALE.length)] * (Math.random()<0.18 ? 2 : 1);
+      const o = actx.createOscillator(); o.type='triangle'; o.frequency.value = f;
+      const eg = actx.createGain(); const t0 = actx.currentTime;
+      eg.gain.setValueAtTime(0.0001, t0);
+      eg.gain.linearRampToValueAtTime(1, t0+0.06);
+      eg.gain.exponentialRampToValueAtTime(0.0001, t0+1.7);
+      o.connect(eg); eg.connect(g); o.start(t0); o.stop(t0+1.8);
+    }, 1500);
+    music = {g, timer};
+  }catch(e){}
+}
+function stopMusic(){
+  if(!music) return;
+  clearInterval(music.timer);
+  try{ music.g.disconnect(); }catch(e){}
+  music = null;
+}
+function updateVolumes(){
+  const v = vols();
+  if(music) music.g.gain.value = 0.05 * v.master * v.music;
+  if(ambient){
+    if(ambient.g)  ambient.g.gain.value  = 0.045 * v.master * v.music;
+    if(ambient.og) ambient.og.gain.value = 0.013 * v.master * v.music;
+  }
 }
 // procedural ambient bed: filtered wind noise + a low detuned pad
 let ambient = null;
@@ -235,14 +287,14 @@ function startAmbient(){
     for(let i=0;i<len;i++){ const w=Math.random()*2-1; last=(last+0.025*w)/1.025; d[i]=last*3.2; }
     const src=actx.createBufferSource(); src.buffer=buf; src.loop=true;
     const filt=actx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=380;
-    const g=actx.createGain(); g.gain.value=0.045;
+    const g=actx.createGain(); g.gain.value=0.045*vols().master*vols().music;
     src.connect(filt); filt.connect(g); g.connect(actx.destination); src.start();
     const o1=actx.createOscillator(); o1.type='sine'; o1.frequency.value=55;
     const o2=actx.createOscillator(); o2.type='sine'; o2.frequency.value=55.7;
-    const og=actx.createGain(); og.gain.value=0.013;
+    const og=actx.createGain(); og.gain.value=0.013*vols().master*vols().music;
     o1.connect(og); o2.connect(og); og.connect(actx.destination);
     o1.start(); o2.start();
-    ambient={src, o1, o2};
+    ambient={src, o1, o2, g, og};
   }catch(e){}
 }
 function stopAmbient(){
@@ -282,8 +334,13 @@ function gainXp(skill, amt, report){
   let mult = 1 + gearStats().xpb + milestoneBonus('xpb');
   if(skill==='piloting') mult += gearStats().pxp;
   const ev = activeEvent();
-  if(ev && state.zone===ev.zone && ev.skills.includes(skill)) mult *= ev.mult;
+  let evBonus = 0;
+  if(ev && state.zone===ev.zone && ev.skills.includes(skill)){
+    evBonus = Math.round(amt*mult*(ev.mult-1));
+    mult *= ev.mult;
+  }
   amt = Math.max(1, Math.round(amt*mult));
+  if(evBonus>0) state.stats.eventXp += evBonus;
   const before = skillLevel(skill);
   state.skills[skill].xp = Math.min(state.skills[skill].xp + amt, XP_TABLE[MAXL]);
   const after = skillLevel(skill);
@@ -425,6 +482,7 @@ function completeAction(a, report){
     if(a.type==='craft'){
       const critChance = 0.05 + skillLevel(a.skill)*0.0012;   // 5% → ~17% at level 100
       if(Math.random() < critChance){
+        state.stats.crits++;
         for(const k in a.outputs){
           addItem(k, a.outputs[k]);
           if(report) report.items[k]=(report.items[k]||0)+a.outputs[k];
@@ -434,6 +492,11 @@ function completeAction(a, report){
       }
     }
     gainXp(a.skill, a.xp, report);
+    if(!report){
+      if(a.type==='gather') sfxGather();
+      else if(a.type==='craft') sfxCraft();
+      else if(a.type==='hack') sfxHack();
+    }
     if(a.type==='hack') onHackEvent(a.id, report);
     if(a.type==='pilot') onRunEvent(report);
     if(!report) hintOnce('gather', '<b>Tip:</b> everything you gather stacks in your Cargo Hold — sell it, cook it, or build with it at any settlement workshop.');
@@ -508,6 +571,7 @@ function onKillEntity(ent, E){
   let cr = rint(E.credits[0], E.credits[1]);
   if(ent.elite){
     cr *= 3;
+    state.stats.alphaKills++;
     addItem('anomaly_cache', 1);
     toast(`<b>★ Alpha ${E.name} destroyed!</b>`,'quest','Triple credits and a sealed cache.');
     sndLoot();
@@ -594,6 +658,7 @@ function eat(id){
   const it=D.ITEMS[id];
   if(!it || !it.heal || !removeItem(id,1)) return;
   state.hp = Math.min(maxHp(), state.hp + it.heal);
+  sfxEat();
 }
 function autoEat(){
   if(!state.settings.autoEat || !state.combat) return;
@@ -615,6 +680,7 @@ function useItem(id){
   }
   else if(it.type==='consumable' && it.open){
     removeItem(id,1);
+    state.stats.cachesOpened++;
     const cr = rint(it.open[0], it.open[1]);
     addCredits(cr);
     toast(`<b>Anomaly Cache:</b> ${fmt(cr)} cr inside.`,'quest'); sndLoot();
@@ -631,6 +697,7 @@ function equipItem(id){
   if(prev) addItem(prev,1);
   state.hp = Math.min(state.hp, maxHp());
   addLog(`Equipped ${it.name}.`);
+  sfxEquip();
   markDirty('side');
 }
 function unequip(slot){
@@ -649,16 +716,19 @@ function sellItem(id, qty){
   removeItem(id, qty);
   const total = sellPrice(id)*qty;
   addCredits(total);
+  sfxSell();
   addLog(`Sold ${it.name}×${qty} for ${fmt(total)} cr.`);
 }
-function buyOffer(vendorId, idx){
+function buyOffer(vendorId, idx, qty){
   const v = D.SHOPS[vendorId];
   const o = v ? v.stock[idx] : null;
   if(!o) return;
-  if(state.credits < o.price){ toast('<b>Not enough credits.</b>','bad'); return; }
-  state.credits -= o.price;
-  addItem(o.item,1);
-  addLog(`Bought ${D.ITEMS[o.item].name} from ${v.name} for ${fmt(o.price)} cr.`);
+  qty = qty||1;
+  let bought = 0;
+  while(bought<qty && state.credits>=o.price){ state.credits-=o.price; addItem(o.item,1); bought++; }
+  if(!bought){ toast('<b>Not enough credits.</b>','bad'); return; }
+  sfxSell();
+  addLog(`Bought ${D.ITEMS[o.item].name}×${bought} from ${v.name} for ${fmt(o.price*bought)} cr.`);
   markDirty('float','side');
 }
 
@@ -713,6 +783,47 @@ function onKillEvent(eid){
       c.have++;
       if(c.have>=c.need){ toast(`<b>Order filled:</b> ${D.ENEMIES[eid].name}`,'quest','Claim it at the Haven contract board.'); sndQuest(); }
       markDirty('float');
+    }
+  }
+}
+
+/* ================= feats (achievements) ================= */
+const ACHIEVEMENTS = [
+  {id:'first_blood', icon:'⚔', name:'First Blood',        desc:'Defeat a hostile',                       check:s=>s.stats.kills>=1},
+  {id:'century',     icon:'💀', name:'Centurion',          desc:'Defeat 100 hostiles',                    check:s=>s.stats.kills>=100},
+  {id:'alpha',       icon:'★',  name:'Alpha Hunter',       desc:'Bring down an ★ Alpha',                  check:s=>s.stats.alphaKills>=1},
+  {id:'alpha10',     icon:'🌟', name:'Apex Cull',          desc:'Bring down 10 Alphas',                   check:s=>s.stats.alphaKills>=10},
+  {id:'warden',      icon:'👁', name:'Warden Down',        desc:'Defeat WARDEN-7',                        check:s=>s.quests.q7&&s.quests.q7.claimed},
+  {id:'story',       icon:'📜', name:'The Whole Truth',    desc:'Finish the campaign',                    check:s=>s.quests.q11&&s.quests.q11.claimed},
+  {id:'all_q',       icon:'🏆', name:'Completionist',      desc:'Claim every mission',                    check:s=>D.QUEST_ORDER.every(q=>s.quests[q]&&s.quests[q].claimed)},
+  {id:'rich1',       icon:'⬡',  name:'First Fortune',      desc:'Earn 10,000 cr lifetime',                check:s=>s.stats.crEarned>=10000},
+  {id:'rich2',       icon:'💰', name:'Magnate',            desc:'Earn 250,000 cr lifetime',               check:s=>s.stats.crEarned>=250000},
+  {id:'sk50',        icon:'📈', name:'Specialist',         desc:'Reach level 50 in any skill',            check:s=>D.SKILLS.some(k=>levelFor(s.skills[k.id].xp)>=50)},
+  {id:'sk100',       icon:'💯', name:'True Mastery',       desc:'Reach level 100 in any skill',           check:s=>D.SKILLS.some(k=>levelFor(s.skills[k.id].xp)>=100)},
+  {id:'tot500',      icon:'Σ',  name:'Well-Rounded',       desc:'Total level 500',                        check:s=>D.SKILLS.reduce((t,k)=>t+levelFor(s.skills[k.id].xp),0)>=500},
+  {id:'tot1200',     icon:'🧠', name:'Polymath',           desc:'Total level 1200',                       check:s=>D.SKILLS.reduce((t,k)=>t+levelFor(s.skills[k.id].xp),0)>=1200},
+  {id:'work10',      icon:'📋', name:'Reliable',           desc:'Fill 10 work orders',                    check:s=>s.stats.contractsDone>=10},
+  {id:'work50',      icon:'🗂', name:'Pillar of Haven',    desc:'Fill 50 work orders',                    check:s=>s.stats.contractsDone>=50},
+  {id:'cache10',     icon:'🎁', name:'Anomaly Magnet',     desc:'Open 10 anomaly caches',                 check:s=>s.stats.cachesOpened>=10},
+  {id:'crit1',       icon:'✦',  name:'Masterwork',         desc:'Craft a masterwork',                     check:s=>s.stats.crits>=1},
+  {id:'crit50',      icon:'⚒',  name:'Signature Series',   desc:'Craft 50 masterworks',                   check:s=>s.stats.crits>=50},
+  {id:'charted',     icon:'🗺', name:'Cartographer',       desc:'Chart all seven regions',                check:s=>s.visited.length>=7},
+  {id:'friends',     icon:'🤝', name:'Friend of the Reach',desc:'Earn every settlement trader\'s trust',  check:s=>s.unlockedShops.length>=4},
+  {id:'storm',       icon:'⚡', name:'Storm Chaser',       desc:'Earn 5,000 bonus XP from world events',  check:s=>s.stats.eventXp>=5000},
+  {id:'hardy',       icon:'🛡', name:'Hard to Kill',       desc:'Total level 300 with zero deaths',       check:s=>s.stats.deaths===0 && D.SKILLS.reduce((t,k)=>t+levelFor(s.skills[k.id].xp),0)>=300},
+];
+function checkAchievements(){
+  if(!state) return;
+  for(const a of ACHIEVEMENTS){
+    if(state.achievements.includes(a.id)) continue;
+    let ok=false;
+    try{ ok = a.check(state); }catch(e){}
+    if(ok){
+      state.achievements.push(a.id);
+      toast(`<b>🏅 Feat earned: ${a.name}</b>`,'quest', a.desc);
+      addLog(`Feat earned — ${a.icon} ${a.name}.`,'gold');
+      sndQuest();
+      markDirty('side');
     }
   }
 }
@@ -786,6 +897,7 @@ function claimContract(i){
   const c = state.contracts[i];
   if(!c || contractProgress(c) < c.need) return;
   if(c.kind==='gather') removeItem(c.item, c.need);
+  state.stats.contractsDone++;
   addCredits(c.cr);
   const xpSkill = c.kind==='kill' ? 'vitality' : c.skill;
   gainXp(xpSkill, c.xp);
@@ -1097,7 +1209,8 @@ function renderFloat(){
       return `<div class="shop-row"><span class="shop-ico">${it.icon}</span>
         <div><div class="shop-name">${it.name}</div><div class="shop-desc">${it.desc}</div></div>
         <span class="shop-price">${fmt(o.price)} cr</span>
-        <button class="btn primary tiny" data-buy="${i}" ${state.credits>=o.price?'':'disabled'}>Buy</button></div>`;
+        <button class="btn primary tiny" data-buy="${i}" ${state.credits>=o.price?'':'disabled'}>Buy</button>
+        <button class="btn tiny" data-buy="${i}" data-buyq="5" ${state.credits>=o.price?'':'disabled'}>×5</button></div>`;
     }).join('');
     const day = Math.floor(Date.now()/86400000);
     const report = MARKET_CATS.map((c,i)=>{
@@ -1172,6 +1285,7 @@ const SIDE_TABS = [
   {id:'gear', label:'Gear'},
   {id:'missions', label:'Missions'},
   {id:'map', label:'Map'},
+  {id:'feats', label:'Feats'},
 ];
 function renderSideTabs(){
   const qReady = D.QUEST_ORDER.filter(q=>['available','complete'].includes(questStatus(D.QUESTS[q]))).length;
@@ -1189,6 +1303,18 @@ function renderSide(){
   else if(ui.sideTab==='missions') html = missionsHtml();
   else if(ui.sideTab==='map') html = `<canvas id="mmap" width="330" height="330" style="width:100%; border-radius:10px;"></canvas>
     <div class="empty-note"><span style="color:var(--acc)">⬤</span> open gate · <span style="color:var(--bad)">⬤</span> sealed gate · <span style="color:var(--gold)">▪</span> settlement · <span style="color:var(--gold)">◌</span> live event<br>Walk there — no teleports in the Reach.</div>`;
+  else if(ui.sideTab==='feats'){
+    const earned = state.achievements.length;
+    html = `<div class="empty-note" style="padding:8px;">🏅 ${earned} / ${ACHIEVEMENTS.length} feats earned</div>`;
+    html += ACHIEVEMENTS.map(a=>{
+      const got = state.achievements.includes(a.id);
+      return `<div class="quest-row" style="${got?'':'opacity:.45'}">
+        <div class="q-top"><span style="font-size:16px; margin-right:4px;">${a.icon}</span>
+        <span class="q-name">${a.name}</span><span class="q-state ${got?'complete':'locked'}">${got?'earned':'—'}</span></div>
+        <div class="q-body">${a.desc}</div>
+      </div>`;
+    }).join('');
+  }
   el.innerHTML = html;
   el.scrollTop = st;
   if(ui.sideTab==='map'){ const cv=$('#mmap'); if(cv) KRWorld.drawMinimap(cv); }
@@ -1216,6 +1342,22 @@ function cargoHtml(){
       btns.push(`<button class="btn gold tiny" data-sell="${it.id}" data-qty="all">Sell all</button>`);
     }
     const stat = it.slot ? gearStatLine(it) : it.heal ? 'Heals '+it.heal+' hull' : '';
+    let compare = '';
+    if(it.slot){
+      const eqId = state.gear[it.slot];
+      const eq = eqId ? D.ITEMS[eqId] : (it.slot==='weapon' ? D.UNARMED : {});
+      if(eqId!==it.id){
+        const diffs = [['acc','acc'],['hit','max hit'],['def','def'],['hpb','hull'],['gspd','gather'],['aspd','atk spd'],['xpb','xp']]
+          .map(([k,label])=>{
+            const dv=(it[k]||0)-(eq[k]||0);
+            if(!dv) return null;
+            const pct = (k==='gspd'||k==='aspd'||k==='xpb');
+            const val = pct ? Math.round(dv*100)+'%' : dv;
+            return `<span style="color:${dv>0?'var(--xp)':'var(--bad)'}">${dv>0?'▲':'▼'} ${label} ${dv>0?'+':''}${val}</span>`;
+          }).filter(Boolean);
+        if(diffs.length) compare = `<div class="d-stats">vs equipped: ${diffs.join(' · ')}</div>`;
+      }
+    }
     const mm = it.value>0 ? marketMult(it.id) : 1;
     const mline = (it.value>0 && itemCategory(it.id))
       ? `<div class="d-stats" style="color:${mm>=1?'var(--xp)':'var(--bad)'}">Market: ${mm>=1?'▲':'▼'} ${Math.round(mm*100)}% of list today</div>` : '';
@@ -1223,6 +1365,7 @@ function cargoHtml(){
       <div><span class="d-name">${it.icon} ${it.name}</span><span class="d-type">${it.type}${it.value>0?' · '+fmt(it.value)+' cr':''}</span></div>
       <div class="d-desc">${it.desc}</div>
       ${stat?`<div class="d-stats">${stat}</div>`:''}
+      ${compare}
       ${mline}
       <div class="d-btns">${btns.join('')}</div>
     </div>`;
@@ -1311,6 +1454,9 @@ function missionsHtml(){
           ? `<div class="q-btns"><button class="btn gold" data-qclaim="${qid}">Turn in</button></div>`
           : `<div class="q-body" style="color:var(--gold)">✔ Objectives done — return to ${npcDef(q.giver).name}.</div>`;
       }
+      if(stat==='active' || stat==='complete'){
+        body += `<div class="q-btns"><button class="btn tiny" data-qtrack="${qid}">${state.tracked===qid?'Tracking ✓':'Track on HUD'}</button></div>`;
+      }
     }
     return `<div class="quest-row ${sel?'sel':''}" data-quest="${qid}">
       <div class="q-top"><span class="q-name">${q.name}</span><span class="q-state ${stat}">${stat}</span></div>
@@ -1334,10 +1480,55 @@ function showModal(html, locked){
   $('#modalRoot').innerHTML = `<div class="modal-back" ${locked?'data-locked="1"':''}><div class="modal">${html}</div></div>`;
 }
 function closeModal(){ $('#modalRoot').innerHTML=''; }
+function showTitle(awayReport){
+  const hasSave = !!state;
+  showModal(`
+    <div class="intro-title"><span class="ka">KESSLER</span> REACH</div>
+    <div class="intro-sub">a frontier skilling RPG · v2.0</div>
+    <p style="text-align:center; color:var(--dim);">${hasSave
+      ? `Welcome back, <b style="color:var(--acc)">${esc(state.callsign)}</b> — the Reach kept your place.`
+      : 'A shattered sky. A crashed hauler. Fifteen ways to become a legend.'}</p>
+    <div class="m-btns" style="justify-content:center;">
+      ${hasSave?'<button class="btn primary" id="titleContinue">▶ Continue</button>':''}
+      <button class="btn ${hasSave?'':'primary'}" id="titleNew">${hasSave?'New drifter':'▶ Begin'}</button>
+      <button class="btn" id="titleHelp">Help & about</button>
+    </div>
+  `, true);
+  if(hasSave) $('#titleContinue').addEventListener('click', ()=>{
+    closeModal();
+    if(awayReport) showAway(awayReport);
+  });
+  $('#titleNew').addEventListener('click', ()=>{
+    if(hasSave){
+      showModal(`<h2>New drifter</h2><p>This erases your current save — ${esc(state.callsign)}, every level, every credit. No undo.</p>
+        <div class="m-btns"><button class="btn danger" id="wipeYes">Erase and start over</button><button class="btn primary" id="wipeNo">Keep my save</button></div>`, true);
+      $('#wipeYes').addEventListener('click', ()=>{ localStorage.removeItem(SAVE_KEY); state=null; location.reload(); });
+      $('#wipeNo').addEventListener('click', ()=>{ showTitle(awayReport); });
+    }else showIntro();
+  });
+  $('#titleHelp').addEventListener('click', ()=>{ showHelp(()=>showTitle(awayReport)); });
+}
+function showHelp(backFn){
+  showModal(`<h2>Help & About</h2>
+    <p style="color:var(--acc)">Controls</p>
+    <div class="guide-row"><span class="g-lvl">Click</span><span style="flex:1">Walk there · use whatever you clicked (nodes, machines, people, hostiles)</span></div>
+    <div class="guide-row"><span class="g-lvl">WASD</span><span style="flex:1">Move directly (camera-relative)</span></div>
+    <div class="guide-row"><span class="g-lvl">Drag</span><span style="flex:1">Orbit the camera (arrow keys too · pinch or scroll to zoom)</span></div>
+    <div class="guide-row"><span class="g-lvl">1–5</span><span style="flex:1">Side panels: Cargo · Gear · Missions · Map · Feats</span></div>
+    <div class="guide-row"><span class="g-lvl">H / Esc</span><span style="flex:1">This screen / close panels</span></div>
+    <p style="color:var(--acc); margin-top:10px;">The loop</p>
+    <p>Gather in the field, refine at settlement workshops, fight for what can't be gathered, and fly to unlock the far regions. Missions are accepted and turned in by talking to people — the journal tracks and points. Gates open when you meet their Piloting level or finish the right mission.</p>
+    <p>Watch for <b style="color:var(--gold)">world events</b> (bonus XP where they land), <b style="color:var(--gold)">★ Alpha</b> hostiles (triple loot), rolling <b style="color:var(--gold)">work orders</b> at Haven's board, daily <b style="color:var(--gold)">market drift</b>, and total-level <b style="color:var(--gold)">milestones</b>.</p>
+    <p style="color:var(--acc); margin-top:10px;">About</p>
+    <p>Kessler Reach is an original game — every name, place, item and line of lore was written for it.
+    Rendering: Three.js r147 (MIT). Built with Claude Code. Your save lives in this browser; export it from ⚙ Settings.</p>
+    <div class="m-btns"><button class="btn primary" id="helpBack">Back</button></div>`, true);
+  $('#helpBack').addEventListener('click', ()=>{ if(backFn) backFn(); else closeModal(); });
+}
 function showIntro(){
   showModal(`
     <div class="intro-title"><span class="ka">KESSLER</span> REACH</div>
-    <div class="intro-sub">a frontier skilling RPG · v1.3</div>
+    <div class="intro-sub">a frontier skilling RPG · v2.0</div>
     <p>${D.INTRO_LORE}</p>
     <p style="color:var(--acc)">Click the ground to walk (or WASD). Click glowing things to use them. Drag to orbit, scroll to zoom.</p>
     <label>Your callsign</label>
@@ -1371,12 +1562,16 @@ function showAway(report){
 function showSettings(){
   const s = state.settings;
   const playH = (Date.now()-state.created)/3600000;
-  showModal(`<h2>Settings & Save <span style="color:var(--faint); font-size:11px; letter-spacing:1px;">v1.3</span></h2>
+  showModal(`<h2>Settings & Save <span style="color:var(--faint); font-size:11px; letter-spacing:1px;">v2.0</span></h2>
     <div class="setting-row"><span class="grow">Callsign</span><input type="text" id="setName" maxlength="16" style="width:160px" value="${esc(state.callsign)}"></div>
     <div class="setting-row"><span class="grow">Auto-eat in combat</span><input type="checkbox" id="setAutoEat" ${s.autoEat?'checked':''}></div>
     <div class="setting-row"><span class="grow">Auto-eat below</span>
       <select id="setEatAt">${[0.3,0.45,0.6].map(v=>`<option value="${v}" ${Math.abs(s.eatAt-v)<0.01?'selected':''}>${Math.round(v*100)}%</option>`).join('')}</select></div>
     <div class="setting-row"><span class="grow">Sound</span><input type="checkbox" id="setSound" ${s.sound?'checked':''}></div>
+    <div class="setting-row"><span class="grow">Music & ambience</span><input type="checkbox" id="setMusic" ${s.music?'checked':''}></div>
+    <div class="setting-row"><span class="grow">Master volume</span><input type="range" id="volMaster" min="0" max="1" step="0.05" value="${s.vol.master}" style="width:140px"></div>
+    <div class="setting-row"><span class="grow">Effects volume</span><input type="range" id="volSfx" min="0" max="1" step="0.05" value="${s.vol.sfx}" style="width:140px"></div>
+    <div class="setting-row"><span class="grow">Music volume</span><input type="range" id="volMusic" min="0" max="1" step="0.05" value="${s.vol.music}" style="width:140px"></div>
     <div class="setting-row"><span class="grow">Lifetime: ${fmt(state.stats.kills)} kills · ${fmt(state.stats.deaths)} deaths · ${fmt(state.stats.actionsDone)} actions · ${fmt(state.stats.crEarned)} cr earned · ${playH.toFixed(1)}h</span></div>
     <label>Export save (copy this string somewhere safe)</label>
     <textarea id="exportBox" readonly></textarea>
@@ -1393,7 +1588,11 @@ function showSettings(){
     state.settings.autoEat = $('#setAutoEat').checked;
     state.settings.eatAt = parseFloat($('#setEatAt').value);
     state.settings.sound = $('#setSound').checked;
-    if(state.settings.sound) startAmbient(); else stopAmbient();
+    state.settings.music = $('#setMusic').checked;
+    state.settings.vol = {master:parseFloat($('#volMaster').value), sfx:parseFloat($('#volSfx').value), music:parseFloat($('#volMusic').value)};
+    if(state.settings.sound){ startAmbient(); if(state.settings.music) startMusic(); else stopMusic(); }
+    else { stopAmbient(); stopMusic(); }
+    updateVolumes();
     closeModal(); renderTop(); save();
   });
   $('#btnExport').addEventListener('click', ()=>{
@@ -1432,15 +1631,43 @@ function showSkillGuide(skillId){
     <div class="m-btns"><button class="btn primary" data-close-modal="1">Close</button></div>`);
 }
 
+/* ================= quest tracker HUD ================= */
+let trackerCache = '';
+function renderTracker(){
+  const el = $('#tracker');
+  if(!el || !state) return;
+  let qid = state.tracked;
+  if(!qid || !state.quests[qid] || state.quests[qid].claimed || !state.quests[qid].started){
+    qid = D.QUEST_ORDER.find(id=>state.quests[id] && state.quests[id].started && !state.quests[id].claimed) || null;
+  }
+  let html = '';
+  if(qid){
+    const q = D.QUESTS[qid];
+    const lines = q.objectives.map((o,i)=>{
+      const p = objProgress(q,i), done = p>=o.qty;
+      let label='';
+      if(o.type==='collect') label = D.ITEMS[o.item].name;
+      else if(o.type==='craft') label = 'Craft '+D.ITEMS[o.item].name;
+      else if(o.type==='kill') label = D.ENEMIES[o.enemy].name;
+      else if(o.type==='hack') label = D.ACTIONS[o.action].name;
+      else if(o.type==='run') label = 'Piloting runs';
+      return `<div class="trk-obj ${done?'done':''}">${done?'✔':'·'} ${label} <span>${fmt(p)}/${o.qty}</span></div>`;
+    }).join('');
+    const ready = questObjectivesDone(q);
+    html = `<div class="trk-name">${q.name}${ready?' <span style="color:var(--gold)">— turn in!</span>':''}</div>${lines}`;
+  }
+  if(html!==trackerCache){ trackerCache=html; el.innerHTML=html; el.style.display=html?'block':'none'; }
+}
+
 /* ================= render all ================= */
 function renderAll(){
-  renderTop(); renderSkills(); renderSide(); renderLog(); renderFloat();
+  renderTop(); renderSkills(); renderSide(); renderLog(); renderFloat(); renderTracker();
 }
 
 /* ================= events ================= */
 document.addEventListener('click', e=>{
-  if(state && state.settings.sound && !ambient) startAmbient();
-  const t = e.target.closest('[data-sidetab],[data-start],[data-stop],[data-sel],[data-equip],[data-unequip],[data-use],[data-sell],[data-buy],[data-quest],[data-qstart],[data-qclaim],[data-skill],[data-close-modal],[data-closefloat],[data-contract],[data-dlgnext],[data-dlgaccept],[data-dlgturnin],[data-dlgtrade]');
+  if(state && state.settings.sound){ if(!ambient) startAmbient(); if(!music) startMusic(); }
+  const t = e.target.closest('[data-sidetab],[data-start],[data-stop],[data-sel],[data-equip],[data-unequip],[data-use],[data-sell],[data-buy],[data-quest],[data-qstart],[data-qclaim],[data-qtrack],[data-skill],[data-close-modal],[data-closefloat],[data-contract],[data-dlgnext],[data-dlgaccept],[data-dlgturnin],[data-dlgtrade]');
   if(t) blip(740, .035, 'sine', .015);   // soft UI tick
   if(!t){
     const back = e.target.classList && e.target.classList.contains('modal-back');
@@ -1461,14 +1688,15 @@ document.addEventListener('click', e=>{
   else if(d.unequip){ unequip(d.unequip); renderSide(); }
   else if(d.use){ useItem(d.use); renderSide(); updateTopDynamic(); }
   else if(d.sell){ sellItem(d.sell, d.qty==='all'?'all':parseInt(d.qty,10)); renderSide(); updateTopDynamic(); }
-  else if(d.buy!==undefined){ if(ui.float && ui.float.vendor) buyOffer(ui.float.vendor, parseInt(d.buy,10)); renderFloat(); renderSide(); updateTopDynamic(); }
+  else if(d.buy!==undefined){ if(ui.float && ui.float.vendor) buyOffer(ui.float.vendor, parseInt(d.buy,10), d.buyq?parseInt(d.buyq,10):1); renderFloat(); renderSide(); updateTopDynamic(); }
   else if(d.dlgnext){ if(ui.float){ ui.float.step++; renderFloat(); } }
   else if(d.dlgaccept){ startQuest(d.dlgaccept); if(ui.float){ ui.float.step=0; } renderFloat(); }
   else if(d.dlgturnin){ claimQuest(d.dlgturnin); if(ui.float){ ui.float.step=0; } renderFloat(); }
   else if(d.dlgtrade){ if(ui.float){ const npc=npcDef(ui.float.npc); ui.float={type:'shop', vendor:npc.shop, uid:ui.float.uid}; renderFloat(); } }
-  else if(d.quest){ if(!e.target.closest('[data-qstart],[data-qclaim]')){ ui.questSel = (ui.questSel===d.quest?null:d.quest); renderSide(); } }
+  else if(d.quest){ if(!e.target.closest('[data-qstart],[data-qclaim],[data-qtrack]')){ ui.questSel = (ui.questSel===d.quest?null:d.quest); renderSide(); } }
   else if(d.qstart){ startQuest(d.qstart); renderSide(); }
   else if(d.qclaim){ claimQuest(d.qclaim); }
+  else if(d.qtrack){ state.tracked = (state.tracked===d.qtrack?null:d.qtrack); renderSide(); renderTracker(); }
   else if(d.skill){ showSkillGuide(d.skill); }
   else if(d.closeModal){ closeModal(); }
   else if(d.closefloat){ closeFloat(); }
@@ -1479,14 +1707,27 @@ document.addEventListener('keydown', e=>{
     const back = $('.modal-back');
     if(back && !back.dataset.locked){ closeModal(); return; }
     closeFloat();
+    return;
   }
+  if(!state || $('.modal-back')) return;
+  if(e.target && ['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  const tabKeys = {'1':'cargo','2':'gear','3':'missions','4':'map','5':'feats'};
+  if(tabKeys[e.key]){ ui.sideTab=tabKeys[e.key]; renderSide(); }
+  else if(e.key==='h'||e.key==='H'){ showHelp(); }
 });
 $('#btnSettings').addEventListener('click', ()=>{ if(state) showSettings(); });
+$('#btnHelp').addEventListener('click', ()=>showHelp());
+$('#hudmap').addEventListener('click', ()=>{ if(state){ ui.sideTab='map'; renderSide(); } });
+window.addEventListener('error', ()=>{
+  if(window.__krErrToast) return;
+  window.__krErrToast = 1;
+  try{ toast('<b>Glitch in the Reach</b>','bad','An error was logged to the console. Your save is safe.'); }catch(e){}
+});
 $('#btnSound').addEventListener('click', function(){
   if(!state) return;
   state.settings.sound = !state.settings.sound;
   this.classList.toggle('off', !state.settings.sound);
-  if(state.settings.sound) startAmbient(); else stopAmbient();
+  if(state.settings.sound){ startAmbient(); startMusic(); } else { stopAmbient(); stopMusic(); }
 });
 window.addEventListener('beforeunload', save);
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
@@ -1520,7 +1761,13 @@ setInterval(()=>{
   saveT += dt;
   if(saveT>15){ saveT=0; save(); }
   mapT += dt;
-  if(mapT>1){ mapT=0; if(ui.sideTab==='map'){ const cv=$('#mmap'); if(cv) KRWorld.drawMinimap(cv); } }
+  if(mapT>1){ mapT=0;
+    if(ui.sideTab==='map'){ const cv=$('#mmap'); if(cv) KRWorld.drawMinimap(cv); }
+    checkAchievements();
+    renderTracker();
+  }
+  const hm = $('#hudmap');
+  if(hm && !document.hidden) KRWorld.drawLocalMap(hm);
   if(dirty.float){ dirty.float=false; renderFloat(); }
   if(dirty.side){ dirty.side=false; renderSide(); }
   if(dirty.skills){ dirty.skills=false; renderSkills(); }
@@ -1577,11 +1824,13 @@ function boot(){
     const report = applyOffline();
     if(state.action && state.action.ent) KRWorld.startWork(state.action.ent);
     renderAll();
-    if(report) showAway(report);
+    showTitle(report);
     checkQuestNotify();
   }else{
-    showIntro();
+    showTitle(null);
   }
+  const bootEl = document.getElementById('boot');
+  if(bootEl){ bootEl.classList.add('off'); setTimeout(()=>bootEl.remove(), 700); }
   window.KR = {get state(){return state;}, gainXp, addItem, addCredits, save, D, startQuest, claimQuest, engage, isZoneUnlocked,
     interact:(uid)=>worldApi.interact(KRWorld.byUid(uid)),
     _event(id){ const ev=D.EVENTS.find(e=>e.id===id); if(ev){ state.event={id, until:Date.now()+150000}; toast(`<b>${ev.icon} ${ev.name}</b>`,'quest',ev.desc); } },

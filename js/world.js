@@ -773,16 +773,41 @@ function tryMove(e, nx, nz, pr){
 
 /* ---------------- input ---------------- */
 let pdown=null, dragging=false;
-function onPointerDown(ev){ pdown={x:ev.clientX, y:ev.clientY, b:ev.button}; dragging=false; }
+const touches=new Map();           // active pointers for pinch zoom
+let pinchD=0;
+function onPointerDown(ev){
+  touches.set(ev.pointerId, {x:ev.clientX, y:ev.clientY});
+  if(touches.size===2){
+    const a=[...touches.values()];
+    pinchD=Math.hypot(a[0].x-a[1].x, a[0].y-a[1].y);
+    pdown=null; dragging=false;
+    return;
+  }
+  pdown={x:ev.clientX, y:ev.clientY, lx:ev.clientX, ly:ev.clientY, b:ev.button};
+  dragging=false;
+}
 function onPointerMove(ev){
-  if(pdown && (Math.abs(ev.clientX-pdown.x)>5 || Math.abs(ev.clientY-pdown.y)>5)) dragging=true;
-  if(pdown && dragging){
-    cam.yaw -= (ev.movementX||0)*0.0065;
-    cam.pitch = clamp(cam.pitch + (ev.movementY||0)*0.005, 0.32, 1.35);
+  if(touches.has(ev.pointerId)) touches.set(ev.pointerId, {x:ev.clientX, y:ev.clientY});
+  if(touches.size===2){
+    const a=[...touches.values()];
+    const d=Math.hypot(a[0].x-a[1].x, a[0].y-a[1].y);
+    cam.dist=clamp(cam.dist+(pinchD-d)*0.06, 9, 46);
+    pinchD=d;
+    return;
+  }
+  if(pdown){
+    const dx=ev.clientX-pdown.lx, dy=ev.clientY-pdown.ly;
+    pdown.lx=ev.clientX; pdown.ly=ev.clientY;
+    if(Math.abs(ev.clientX-pdown.x)>6 || Math.abs(ev.clientY-pdown.y)>6) dragging=true;
+    if(dragging){
+      cam.yaw -= dx*0.0065;
+      cam.pitch = clamp(cam.pitch + dy*0.005, 0.32, 1.35);
+    }
   }
   updateHover(ev);
 }
 function onPointerUp(ev){
+  touches.delete(ev.pointerId);
   const wasDrag=dragging, had=pdown;
   pdown=null; dragging=false;
   if(!had || wasDrag || had.b!==0) return;   // only clicks that BEGAN on the canvas act on the world
@@ -1280,6 +1305,59 @@ function drawMinimap(cv){
   }
 }
 
+/* ---------------- local HUD minimap (player-centered) ---------------- */
+function drawLocalMap(cv){
+  if(!player) return;
+  const g=cv.getContext('2d');
+  const S=cv.width, half=S/2, range=62, scale=half/range;
+  g.clearRect(0,0,S,S);
+  g.save();
+  g.beginPath(); g.arc(half,half,half-1,0,7); g.clip();
+  // ground: region tint where the player stands, darker outside walkable
+  g.fillStyle='#101622'; g.fillRect(0,0,S,S);
+  for(const r of REGIONS){
+    const dx=(r.x-player.x)*scale, dz=(r.z-player.z)*scale;
+    g.fillStyle='#'+new THREE.Color(r.color).getHexString();
+    g.globalAlpha=0.5;
+    g.beginPath(); g.arc(half+dx, half+dz, r.r*scale, 0, 7); g.fill();
+  }
+  g.globalAlpha=0.8;
+  for(const w of W.water){
+    const dx=(w.x-player.x)*scale, dz=(w.z-player.z)*scale;
+    g.fillStyle='#16525e';
+    g.beginPath(); g.arc(half+dx, half+dz, w.r*scale, 0, 7); g.fill();
+  }
+  g.globalAlpha=1;
+  // entities as dots
+  for(const e of ents){
+    const d=Math.hypot(e.x-player.x, e.z-player.z);
+    if(d>range) continue;
+    const x=half+(e.x-player.x)*scale, y=half+(e.z-player.z)*scale;
+    if(e.kind==='enemy'){
+      if(e.state==='dead') continue;
+      g.fillStyle = e.elite ? '#ffd35c' : '#ff5d6c';
+      g.fillRect(x-1.5, y-1.5, 3, 3);
+    }else if(e.kind==='npc'){
+      g.fillStyle='#ffc35c'; g.beginPath(); g.arc(x,y,2,0,7); g.fill();
+    }else if(e.kind==='node'){
+      g.fillStyle='#3fe0c8'; g.fillRect(x-1, y-1, 2, 2);
+    }else if(e.kind==='facility'||e.kind==='hangar'||e.kind==='board'){
+      g.fillStyle='#6ea4ff'; g.fillRect(x-2, y-2, 4, 4);
+    }else if(e.kind==='gate'){
+      g.fillStyle=e.open?'#3fe0c8':'#ff5d6c';
+      g.beginPath(); g.arc(x,y,3,0,7); g.stroke(); g.fill();
+    }
+  }
+  // player arrow (faces camera-forward)
+  g.fillStyle='#ffffff';
+  g.save(); g.translate(half,half); g.rotate(-(player.face||0));
+  g.beginPath(); g.moveTo(0,-5.5); g.lineTo(4,4.5); g.lineTo(-4,4.5); g.closePath(); g.fill();
+  g.restore();
+  g.restore();
+  g.strokeStyle='#27395c'; g.lineWidth=2;
+  g.beginPath(); g.arc(half,half,half-1,0,7); g.stroke();
+}
+
 /* ---------------- init ---------------- */
 function init(apiIn){
   api = apiIn;
@@ -1321,6 +1399,7 @@ function init(apiIn){
   canvas.addEventListener('pointerdown', onPointerDown);
   window.addEventListener('pointermove', onPointerMove);
   window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', ev=>{ touches.delete(ev.pointerId); pdown=null; dragging=false; });
   canvas.addEventListener('wheel', onWheel, {passive:false});
   canvas.addEventListener('contextmenu', e=>e.preventDefault());
   window.addEventListener('keydown', e=>onKey(e,true));
@@ -1331,7 +1410,7 @@ function init(apiIn){
 }
 
 return {
-  init, splat, attackFx, killEntity, setEngaged, respawnAtCamp, moveToEntity, distTo, nearestAlive, drawMinimap, pump,
+  init, splat, attackFx, killEntity, setEngaged, respawnAtCamp, moveToEntity, distTo, nearestAlive, drawMinimap, drawLocalMap, pump,
   byUid:uid=>entByUid[uid],
   get entities(){ return ents; },
   playerPos:()=>({x:player.x, z:player.z}),

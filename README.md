@@ -48,8 +48,9 @@ Use **⚙ Settings** to export/import your save as a string.
 | **11 missions** | Survival opening → village arcs (Driftrock Debt, Tides of Brinemoor) → the Undervault campaign → a post-boss revelation arc about what the Shatter really was, ending at the title "Reachwarden" |
 | **3 combat styles** | Kinetics / Marksmanship / Psionics weapons; Resilience trains as you get hit |
 | **A living world** | 8 rotating regional events (meteor showers, lumen blooms, echo tides…) boost skills where they land; ★ Alpha elites roll on every respawn with triple loot; the market drifts daily by category |
-| **Endless goals** | Work orders for every trade (cull / supply / fabricate, rerolled on claim), total-level milestones with account-wide perks, masterwork crafting crits |
-| **Quality of life** | Auto-eat, offline progress (6h), skill guides, export/import saves, ambient audio |
+| **Endless goals** | Work orders for every trade (cull / supply / fabricate, rerolled on claim), total-level milestones with account-wide perks, masterwork crafting crits, **22 feats to earn** |
+| **A real product** | Title screen with Continue/New, loading splash, HUD local-scan minimap + quest tracker, gear comparison tooltips, generative score + per-action SFX with a 3-channel volume mixer, help & credits screen, keyboard shortcuts (1–5, H), touch & pinch support, rolling save backup |
+| **Quality of life** | Auto-eat, offline progress (6h), skill guides, export/import saves |
 
 ### The loop
 1. **Gather** in the field (salvage wrecks, drill ore, pick flora, trawl the ion shallows)
